@@ -10,5 +10,4 @@ daphne
 coverage
 hypothesis
 #Para protección de variables de entorno
-productivo
 python-dotenv

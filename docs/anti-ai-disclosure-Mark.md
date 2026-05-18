@@ -1,0 +1,1 @@
+Consulté conceptos sobre las librerías y dependencias que se tenían que utilizar para los test como (coverage, hypothesis), también investigué como utilizar los prefijos, ya que es la primera vez que trabajo con commits de esa forma [17 de Mayo del 2026].

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos: PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: fairbet_db
+    environment:
+      POSTGRES_DB: fairbet_db
+      POSTGRES_USER: fairbet_user
+      POSTGRES_PASSWORD: fairbet_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - fairbet_network
+
+  # 2. Broker de Mensajería y Capa de Canales: Redis
+  redis:
+    image: redis:7-alpine
+    container_name: fairbet_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - fairbet_network
+
+  # 3. Aplicación Web: Django + DRF + Django Channels (ASGI)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fairbet_web
+    # Usamos daphne en lugar de runserver para dar soporte nativo a WebSockets (Django Channels)
+    command: python -m daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    volumes:
+      - ./src:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://fairbet_user:fairbet_secure_password@db:5432/fairbet_db
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
+    networks:
+      - fairbet_network
+
+  # 4. Procesador de Tareas Asíncronas: Celery Worker
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fairbet_celery
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - ./src:/app
+    environment:
+      - DATABASE_URL=postgres://fairbet_user:fairbet_secure_password@db:5432/fairbet_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - fairbet_network
+
+volumes:
+  pg_data: # Define la persistencia local de la base de datos para que no se borre al apagar Docker
+
+networks:
+  fairbet_network:
+    driver: bridge

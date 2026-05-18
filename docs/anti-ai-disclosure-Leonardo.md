@@ -1,0 +1,1 @@
+Investigué cómo trabajar correctamente con ramas secundarias en Git (git checkout -b) y cómo aplicar los prefijos de Conventional Commits (como chore: y fix:) para corregir un error de digitación en el requirements.txt sin afectar la rama principal [18 de Mayo del 2026].

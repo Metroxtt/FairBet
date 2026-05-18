@@ -1,0 +1,14 @@
+#Stack
+Django>=5.0,<5.1
+djangorestframework
+psycopg[binary]
+redis
+celery
+channels
+daphne
+#Librerias para test
+coverage
+hypothesis
+#Para protección de variables de entorno
+productivo
+python-dotenv

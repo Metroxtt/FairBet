@@ -6,6 +6,7 @@ redis
 celery
 channels
 daphne
+channels-redis
 #Librerias para test
 coverage
 hypothesis

@@ -1,6 +1,7 @@
 #Stack
 Django>=5.0,<5.1
 djangorestframework
+djangorestframework-simplejwt
 psycopg[binary]
 redis
 celery

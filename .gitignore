@@ -1,0 +1,12 @@
+# Node.js (no pertenece al proyecto Django)
+node_modules/
+package.json
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/

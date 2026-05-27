@@ -9,7 +9,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['dni', 'email', 'nombre', 'apellido', 'telefono',
-                  'fecha_nacimiento', 'password', 'confirmar_password']
+                'fecha_nacimiento', 'password', 'confirmar_password']
 
     def validate_dni(self, value):
         if not value.isdigit() or len(value) != 8:
@@ -54,7 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'dni', 'email', 'nombre', 'apellido', 'telefono',
-                  'fecha_nacimiento', 'edad', 'is_excluded', 'date_joined']
+                'fecha_nacimiento', 'edad', 'estado', 'date_joined']
 
 
 class DepositLimitSerializer(serializers.ModelSerializer):

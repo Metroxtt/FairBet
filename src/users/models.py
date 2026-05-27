@@ -1,6 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
+class EstadoUser(models.TextChoices):
+    PENDIENTE_VERIFICACION = 'pendiente_verificacion', 'Pendiente de Verificación'
+    VERIFICADO = 'verificado', 'Verificado'
+    BLOQUEADO = 'bloqueado', 'Bloqueado'
+    AUTOEXCLUIDO = 'autoexcluido', 'Autoexcluido'
 
 class UserManager(BaseUserManager):
     def create_user(self, email, dni, password=None, **extra_fields):
@@ -17,6 +22,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, dni, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('estado', EstadoUser.VERIFICADO)
         return self.create_user(email, dni, password, **extra_fields)
 
 
@@ -27,9 +33,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     apellido = models.CharField('apellidos', max_length=100)
     telefono = models.CharField('teléfono', max_length=15, blank=True)
     fecha_nacimiento = models.DateField('fecha de nacimiento')
-    is_active = models.BooleanField(default=True)
+
+    estado = models.CharField(
+        'estado', max_length=25, 
+        choices=EstadoUser.choices, 
+        default=EstadoUser.PENDIENTE_VERIFICACION)
+    
     is_staff = models.BooleanField(default=False)
-    is_excluded = models.BooleanField('autoexcluido', default=False)
     date_joined = models.DateTimeField('fecha de registro', auto_now_add=True)
 
     objects = UserManager()
@@ -55,6 +65,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def es_mayor_de_edad(self):
         return self.edad >= 18
+    
+    @property
+    def es_verificado(self):
+        return self.estado == EstadoUser.VERIFICADO
+    
+    @property
+    def esta_autoexcluido(self):
+        return self.estado == EstadoUser.AUTOEXCLUIDO
 
 
 class DepositLimit(models.Model):

@@ -1,7 +1,7 @@
+from .models import User, DepositLimit, EstadoUser
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .models import User, DepositLimit
 from .serializers import RegisterSerializer, UserSerializer, DepositLimitSerializer
 
 
@@ -30,7 +30,8 @@ class DepositLimitView(generics.RetrieveUpdateAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def self_exclude(request):
     user = request.user
-    user.is_excluded = True
-    user.is_active = False
-    user.save()
+
+    user.estado = EstadoUser.AUTOEXCLUIDO
+    user.save(update_fields=['estado'])
+
     return Response({'mensaje': 'Usuario autoexcluido correctamente'}, status=status.HTTP_200_OK)

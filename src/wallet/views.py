@@ -29,7 +29,7 @@ class TransactionHistoryView(generics.ListAPIView):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated]) 
 def deposit(request):
     serializer = DepositSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -54,6 +54,11 @@ def deposit(request):
     try:
         transfer(from_account, to_account, amount, f'Depósito de {user}',
                  idempotency_key=idempotency_key)
-        return Response({'mensaje': 'Depósito exitoso', 'saldo': to_account.balance})
+        to_account.refresh_from_db()
+        return Response({''
+        'mensaje': 'Depósito exitoso',
+          'saldo': to_account.balance,
+          'footer': 'Esta es un plataforma educativa con moneda NO real. No se consituye como una casa de apuestas.',
+          })
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

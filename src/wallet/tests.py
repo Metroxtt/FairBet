@@ -38,6 +38,26 @@ class WalletTransferTest(TestCase):
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('50'), 'Duplicada', idempotency_key=key)
 
+    def test_monto_cero(self):
+        with self.assertRaises(ValueError):
+            transfer(self.from_acct, self.to_acct, Decimal('0'), 'Monto cero')
+    def test_monto_negativo(self):
+        with self.assertRaises(ValueError):
+            transfer(self.from_acct, self.to_acct, Decimal('-50'), 'Monto negativo' )
+    def test_idempotencia_monto_distinto(self):
+        from uuid import uuid4
+        key = uuid4()
+        transfer(self.from_acct, self.to_acct, Decimal('50'), 'Original', idempotency_key=key)
+        with self.assertRaises(ValueError):
+            transfer(self.from_acct, self.to_acct, Decimal('100'), 'Distinto monto', idempotency_key=key)
+    def test_transferencia_self_account(self):
+        misma = Account.objects.create(
+            account_type = Account.Tipo.CASA, balance = Decimal('500') 
+        )
+        while self.assertRaises(ValueError):
+            transfer(self.from_acct, self.to_acct, Decimal('100'),'self tranfer')
+
+
 class HypothesisWalletTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

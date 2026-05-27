@@ -1,11 +1,9 @@
-"""
-Tests para la app wallet (Mark).
-Basado en: Sesión 05 (pytest, hypothesis, select_for_update)
-"""
+
 from django.test import TestCase
 from decimal import Decimal
 from .models import Account, LedgerEntry, transfer
 from users.models import User
+from hypothesis import given, strategies as st, assume, settings
 
 
 class WalletTransferTest(TestCase):
@@ -39,3 +37,72 @@ class WalletTransferTest(TestCase):
         transfer(self.from_acct, self.to_acct, Decimal('50'), 'Primera', idempotency_key=key)
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('50'), 'Duplicada', idempotency_key=key)
+
+class HypothesisWalletTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email = 'hypo@test.com', dni = '12345678',
+            nombre = 'Hipothesis', apellido = 'test',
+            fecha_naciemto = '2000-01-01', password= 'test123'
+        )
+    @given(
+        monto = st.decimals(min_value='0.01', max_value='10000',
+                            allow_nan=False, allow_infinity=False, places=4)
+    )
+    @settings(max_examples=50)
+    def test_invarianza_partida_doble(self,monto):
+        from_acct = Account.objects.create(
+            account_type = Account.Tipo.CASA, balance = Decimal('1000000')
+        )
+        to_acct = Account.objects.create(
+            user= self.user, account_type=Account.Tipo.WALLET_USUARIO
+        )
+
+        transfer(from_acct,to_acct,monto, 'TEST HYPOTHESIS')
+
+        total_debits = sum(LedgerEntry.objects.values_list('debit',flat=True))
+        total_credits = sum(LedgerEntry.objects.values_list('credit',flat=True))
+        self.assertEqual(total_debits, total_credits)
+
+    @given(
+        monto = st.decimals(min_value='0.01', max_value='10000',
+                            allow_nan=False, allow_infinity=False, places=4)
+
+    )
+    @settings(max_examples=50)
+    def test_saldo_nunca_negativo(self,monto):
+        from_acct = Account.objects.create(
+            account_type = Account.Tipo.CASA, balance = Decimal('5000')
+        )
+        to_acct = Account.objects.create(
+            user = self.user, account_type=Account.Tipo.WALLET_USUARIO
+
+        )
+        assume(monto <= from_acct.balance)
+
+        transfer(from_acct, to_acct, monto,'TEST SALDO NEGATIVO')
+        from_acct.refresh_from_db()
+        to_acct.refresh_from_db()
+
+        self.assertGreaterEqual(from_acct.balance, Decimal('0'))
+        self.assertGreaterEqual(to_acct.balance, Decimal('0'))
+
+    @given(
+        monto=st.decimals(min_value='0.01',max_value='10000',allow_nan=False,allow_infinity=False,places=4)
+    )
+    @settings(max_examples=50)
+    def test_balance_after_correcto(self,monto):
+        from_acct = Account.objects.create(
+            account_type= Account.Tipo.CASA, balance = Decimal('1000000')
+        )
+        to_acct = Account.objects.create(
+            user = self.user , account_type = Account.Tipo.WALLET_USUARIO
+        )
+        transfer(from_acct, to_acct, monto,'TEST BALANCE AFTER')
+
+        entris = LedgerEntry.objects.filter(account= to_acct)
+        for entry in entris:
+            esperado = Decimal('0') + entry.credit - entry.debit
+            self.assertEqual(entry.balance_after,esperado)
+        
+    

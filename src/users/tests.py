@@ -3,6 +3,7 @@ from decimal import Decimal
 from .models import User, DepositLimit, EstadoUser
 from django.utils import timezone
 from datetime import timedelta
+from .serializers import DepositLimitSerializer
 
 class UserModelTest(TestCase):
     def test_crear_usuario_valido(self):
@@ -94,3 +95,25 @@ class UserModelTest(TestCase):
         self.assertFalse(user.esta_autoexcluido)
         user.estado = EstadoUser.AUTOEXCLUIDO
         self.assertTrue(user.esta_autoexcluido)
+        
+    def test_cooldown_subir_limite(self):
+        user = User.objects.create_user(
+            email='test@example.com',
+            dni='12345678', nombre='Test', apellido='User',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        limite = user.deposit_limit
+        limite.daily_limit = 100
+        limite.save()
+        
+        limite.updated_at = timezone.now() - timedelta(hours=2)
+        DepositLimit.objects.filter(pk=limite.pk).update(updated_at=limite.updated_at)
+        limite.refresh_from_db()
+        
+        data = {'daily_limit': 500}
+        serializer = DepositLimitSerializer(
+            instance=limite, data=data, partial=True,
+            context={'request': type('Req', (), {'user': user})()}
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('daily_limit', serializer.errors)

@@ -61,3 +61,22 @@ class DepositLimitSerializer(serializers.ModelSerializer):
     class Meta:
         model = DepositLimit
         fields = ['daily_limit', 'weekly_limit', 'monthly_limit', 'updated_at']
+        read_only_fields = ['updated_at']
+        
+    def validate(self, data):
+        user = self.context['request'].user
+        deposit_limit = user.deposit_limit
+        from django.utils import timezone
+        from datetime import timedelta
+        for campo in ['daily_limit', 'weekly_limit', 'monthly_limit']:
+            if campo in data:
+                nuevo_valor = data[campo]
+                valor_actual = getattr(deposit_limit, campo)
+                if nuevo_valor > valor_actual:
+                    tiempo_transcurrido = timezone.now() - deposit_limit.updated_at
+                    if tiempo_transcurrido < timedelta(hours=24):
+                        horas_faltantes = 24 - tiempo_transcurrido.total_seconds() / 3600
+                        raise serializers.ValidationError({
+                            campo: f'Deben pasar 24h para subir este límite. Faltan {int(horas_faltantes)}h.'
+                        })
+        return data

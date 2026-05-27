@@ -54,8 +54,8 @@ class WalletTransferTest(TestCase):
         misma = Account.objects.create(
             account_type = Account.Tipo.CASA, balance = Decimal('500') 
         )
-        while self.assertRaises(ValueError):
-            transfer(self.from_acct, self.to_acct, Decimal('100'),'self tranfer')
+        with self.assertRaises(ValueError):
+            transfer(self.from_acct, misma , Decimal('100'),'self tranfer')
 
 
 class HypothesisWalletTest(TestCase):
@@ -63,7 +63,7 @@ class HypothesisWalletTest(TestCase):
         self.user = User.objects.create_user(
             email = 'hypo@test.com', dni = '12345678',
             nombre = 'Hipothesis', apellido = 'test',
-            fecha_naciemto = '2000-01-01', password= 'test123'
+            fecha_nacimiento = '2000-01-01', password= 'test123'
         )
     @given(
         monto = st.decimals(min_value='0.01', max_value='10000',
@@ -120,8 +120,8 @@ class HypothesisWalletTest(TestCase):
         )
         transfer(from_acct, to_acct, monto,'TEST BALANCE AFTER')
 
-        entris = LedgerEntry.objects.filter(account= to_acct)
-        for entry in entris:
+        entries = LedgerEntry.objects.filter(account= to_acct)
+        for entry in entries:
             esperado = Decimal('0') + entry.credit - entry.debit
             self.assertEqual(entry.balance_after,esperado)
         

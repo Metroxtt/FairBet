@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Account, LedgerEntry, transfer
 from .serializers import AccountSerializer, LedgerEntrySerializer, DepositSerializer
@@ -39,7 +39,7 @@ def deposit(request):
     idempotency_key = serializer.validated_data.get('idempotency_key')
 
     limits, _ = DepositLimit.objects.get_or_create(user=user)
-    if limits.daily_limit and amount > limits.daily_limit:
+    if amount>limits.daily_limit:
         return Response({'error': 'Supera el límite diario'}, status=status.HTTP_400_BAD_REQUEST)
 
     from_account, _ = Account.objects.get_or_create(

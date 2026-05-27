@@ -1,6 +1,9 @@
 from django.test import TestCase
 from decimal import Decimal
 from .models import User, DepositLimit, EstadoUser
+from django.utils import timezone
+from datetime import timedelta
+
 class UserModelTest(TestCase):
     def test_crear_usuario_valido(self):
         user = User.objects.create_user(
@@ -57,6 +60,30 @@ class UserModelTest(TestCase):
         self.assertFalse(user.es_verificado)
         user.estado = EstadoUser.VERIFICADO
         self.assertTrue(user.es_verificado)
+        
+    def test_autoexclusion_7_dias(self):
+        user = User.objects.create_user(
+            email='test@example.com',
+            dni='12345678', nombre='Test', apellido='User',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        user.estado = EstadoUser.AUTOEXCLUIDO
+        user.fecha_exclusion = timezone.now()
+        user.fecha_fin_exclusion = timezone.now() + timedelta(days=7)
+        self.assertTrue(user.esta_autoexcluido)
+        self.assertIsNotNone(user.fecha_fin_exclusion)
+    
+    def test_autoexclusion_indefinida(self):
+        user = User.objects.create_user(
+            email='test@example.com',
+            dni='12345678', nombre='Test', apellido='User',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        user.estado = EstadoUser.AUTOEXCLUIDO
+        user.fecha_exclusion = timezone.now()
+        user.fecha_fin_exclusion = None
+        self.assertTrue(user.esta_autoexcluido)
+        self.assertIsNone(user.fecha_fin_exclusion)    
         
     def test_esta_autoexcluido_property(self):
         user = User.objects.create_user(

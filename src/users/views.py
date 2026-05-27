@@ -3,6 +3,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, UserSerializer, DepositLimitSerializer
+from datetime import timedelta
+from django.utils import timezone
 
 
 class RegisterView(generics.CreateAPIView):
@@ -30,8 +32,16 @@ class DepositLimitView(generics.RetrieveUpdateAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def self_exclude(request):
     user = request.user
-
+    plazo = request.data.get('plazo', 'indefinido')
     user.estado = EstadoUser.AUTOEXCLUIDO
-    user.save(update_fields=['estado'])
-
+    user.fecha_exclusion = timezone.now()
+    if plazo == '7':
+        user.fecha_fin_exclusion = timezone.now() + timedelta(days=7)
+    elif plazo == '30':
+        user.fecha_fin_exclusion = timezone.now() + timedelta(days=30)
+    elif plazo == '90':
+        user.fecha_fin_exclusion = timezone.now() + timedelta(days=90)
+    else:
+        user.fecha_fin_exclusion = None
+    user.save(update_fields=['estado', 'fecha_exclusion', 'fecha_fin_exclusion'])
     return Response({'mensaje': 'Usuario autoexcluido correctamente'}, status=status.HTTP_200_OK)

@@ -39,6 +39,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=EstadoUser.choices, 
         default=EstadoUser.PENDIENTE_VERIFICACION)
     
+    fecha_exclusion = models.DateTimeField('fecha de autoexclusión', null=True, blank=True)
+    fecha_fin_exclusion = models.DateTimeField('fin de autoexclusión', null=True, blank=True)
+    
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField('fecha de registro', auto_now_add=True)
 

@@ -12,3 +12,4 @@ coverage
 hypothesis
 #Para protección de variables de entorno
 python-dotenv
+django-filter>=24.0

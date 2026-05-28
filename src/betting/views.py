@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from events.models import Event, Market
 from wallet.models import Account, transfer
 from .models import Bet
+from .serializers import BetSerializer, PlaceBetSerializer
 
 
 class BetHistoryView(generics.ListAPIView):
@@ -13,13 +14,10 @@ class BetHistoryView(generics.ListAPIView):
     def get_queryset(self):
         return Bet.objects.filter(user=self.request.user)
 
-    from .serializers import BetSerializer
-
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def place_bet(request):
-    from .serializers import PlaceBetSerializer
     serializer = PlaceBetSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -68,5 +66,4 @@ def place_bet(request):
         seleccion=seleccion, cuota_al_apostar=cuota, monto=monto
     )
 
-    from .serializers import BetSerializer
     return Response(BetSerializer(bet).data, status=status.HTTP_201_CREATED)

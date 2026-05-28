@@ -3,7 +3,7 @@ from decimal import Decimal
 from .models import User, DepositLimit, EstadoUser
 from django.utils import timezone
 from datetime import timedelta
-from .serializers import DepositLimitSerializer
+from .serializers import DepositLimitSerializer, UserSerializer, RegisterSerializer
 
 class UserModelTest(TestCase):
     def test_crear_usuario_valido(self):
@@ -34,7 +34,9 @@ class UserModelTest(TestCase):
             dni='12345678', nombre='Test', apellido='User',
             fecha_nacimiento='2000-01-01', password='testpass123'
         )
-        self.assertEqual(user.edad, 26)
+        hoy= timezone.now().date()
+        esperada = hoy.year - 2000 - ((hoy.month, hoy.day) < (1, 1))
+        self.assertEqual(user.edad, esperada)
         
     def test_es_mayor_de_edad_con_18(self):
         user = User.objects.create_user(
@@ -117,3 +119,78 @@ class UserModelTest(TestCase):
         )
         self.assertFalse(serializer.is_valid())
         self.assertIn('daily_limit', serializer.errors)
+        
+class UserSerializerTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@example.com',
+            dni='12345678', nombre='Test', apellido='User',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+    def test_estado_es_read_only(self):
+        data = {'estado': EstadoUser.VERIFICADO}
+        serializer = UserSerializer(instance=self.user, data=data, partial=True)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.estado, EstadoUser.PENDIENTE_VERIFICACION)    
+        
+class RegisterSerializerTest(TestCase):
+    def test_dni_invalido_rechaza(self):
+        data = {
+            'dni': '12345678A',
+            'email': 'test@test.com',
+            'nombre': 'Test', 'apellido': 'User',
+            'fecha_nacimiento': '2000-01-01',
+            'password': 'testpass123',
+            'confirmar_password': 'testpass123',
+        }
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('dni', serializer.errors)
+    def test_dni_con_digito_verificador_incorrecto_rechaza(self):
+        data = {
+            'dni': '12345679',
+            'email': 'test@test.com',
+            'nombre': 'Test', 'apellido': 'User',
+            'fecha_nacimiento': '2000-01-01',
+            'password': 'testpass123',
+            'confirmar_password': 'testpass123',
+        }
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('dni', serializer.errors)
+    def test_autoexcluido_no_puede_cambiar_limite(self):
+        user = User.objects.create_user(
+            email='autoexcluido@test.com',
+            dni='12345678', nombre='Auto', apellido='Excluido',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        user.estado = EstadoUser.AUTOEXCLUIDO
+        user.save()
+        limite = user.deposit_limit
+        data = {'daily_limit': 100}
+        serializer = DepositLimitSerializer(
+            instance=limite, data=data, partial=True,
+            context={'request': type('Req', (), {'user': user})()}
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('non_field_errors', serializer.errors)
+        
+    def test_autoexcluir_ya_autoexcluido_rechaza(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from rest_framework import status
+        from .views import self_exclude
+        user = User.objects.create_user(
+            email='yaautoexcluido@test.com',
+            dni='12345678', nombre='Ya', apellido='Autoexcluido',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        user.estado = EstadoUser.AUTOEXCLUIDO
+        user.fecha_exclusion = timezone.now()
+        user.save()
+        factory = APIRequestFactory()
+        request = factory.post('/self-exclude/', {'plazo': 'indefinido'})
+        force_authenticate(request, user=user)
+        response = self_exclude(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)                

@@ -14,9 +14,15 @@ class UserManager(BaseUserManager):
         if not dni:
             raise ValueError('El DNI es obligatorio')
         email = self.normalize_email(email)
+        fecha_nac = extra_fields.pop('fecha_nacimiento', None)
+        if isinstance(fecha_nac, str):
+            from datetime import datetime
+            fecha_nac = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
+        extra_fields['fecha_nacimiento'] = fecha_nac
         user = self.model(email=email, dni=dni, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+        DepositLimit.objects.get_or_create(user=user)
         return user
 
     def create_superuser(self, email, dni, password=None, **extra_fields):

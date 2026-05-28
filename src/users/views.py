@@ -32,6 +32,10 @@ class DepositLimitView(generics.RetrieveUpdateAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def self_exclude(request):
     user = request.user
+    
+    if user.esta_autoexcluido:
+        return Response({'error': 'Ya estás autoexcluido. No puedes autoexcluirte nuevamente.'}, 
+                        status=status.HTTP_400_BAD_REQUEST)
     plazo = request.data.get('plazo', 'indefinido')
     user.estado = EstadoUser.AUTOEXCLUIDO
     user.fecha_exclusion = timezone.now()

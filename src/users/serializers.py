@@ -55,6 +55,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'dni', 'email', 'nombre', 'apellido', 'telefono',
                 'fecha_nacimiento', 'edad', 'estado', 'date_joined']
+        read_only_fields = ['estado']
 
 
 class DepositLimitSerializer(serializers.ModelSerializer):
@@ -65,6 +66,10 @@ class DepositLimitSerializer(serializers.ModelSerializer):
         
     def validate(self, data):
         user = self.context['request'].user
+        
+        if user.esta_autoexcluido:
+            raise serializers.ValidationError('No puedes cambiar tus limites mientras estes autoexcluido')
+        
         deposit_limit = user.deposit_limit
         from django.utils import timezone
         from datetime import timedelta

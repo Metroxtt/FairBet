@@ -6,6 +6,7 @@ psycopg[binary]
 redis
 celery
 channels
+channels-redis>=4.0
 daphne
 #Librerias para test
 coverage

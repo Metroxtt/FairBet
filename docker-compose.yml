@@ -31,8 +31,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: fairbet_web
-    # Usamos daphne en lugar de runserver para dar soporte nativo a WebSockets (Django Channels)
-    command: python -m daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    # Usamos runserver que, al tener daphne instalado, levanta ASGI y sirve los estáticos automáticamente
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/app
     ports:

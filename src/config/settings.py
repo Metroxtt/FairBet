@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     # Librerías de terceros
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
     'channels',
     # Apps del proyecto
     'users',

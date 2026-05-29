@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 from .models import Bet, ComboBet, ComboLeg
 
@@ -18,8 +19,6 @@ class PlaceBetSerializer(serializers.Serializer):
     seleccion = serializers.ChoiceField(choices=['local', 'empate', 'visita'])
     monto = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal('0.01'))
     idempotency_key = serializers.UUIDField(required=False)
-
-    from decimal import Decimal
 
 
 class ComboLegSerializer(serializers.ModelSerializer):

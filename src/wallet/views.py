@@ -58,7 +58,7 @@ def deposit(request):
         return Response({
         'mensaje': 'Depósito exitoso',
           'saldo': to_account.balance,
-          'footer': 'Esta es un plataforma educativa con moneda NO real. No se consituye como una casa de apuestas.',
+          'footer': 'Plataforma educativa con moneda virtual. No constituye una casa de apuestas.',
           })
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,16 +73,17 @@ def withdraw(request):
     amount = serializer.validated_data['amount']
     idempotency_key= serializer.validated_data.get('idempotency_key')
 
-    if user.is_excluded:
-        return Response({'error': 'Usuario excluido automaticamente, no podrá realizar retiros'},
+    if user.esta_autoexcluido:
+        return Response({'error': 'Usuario autoexcluido, no puede realizar retiros'},
                         status=status.HTTP_403_FORBIDDEN)
-    
-    from_account = Account.objects.get(
+
+    from_account, _ = Account.objects.get_or_create(
         user=user,
         account_type=Account.Tipo.WALLET_USUARIO
     )
-    to_account = Account.objects.get(
-        account_type = Account.Tipo.CASA
+    to_account, _ = Account.objects.get_or_create(
+        account_type=Account.Tipo.CASA,
+        defaults={'balance': 1000000}
     )
 
     try:

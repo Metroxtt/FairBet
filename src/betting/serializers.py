@@ -20,7 +20,6 @@ class PlaceBetSerializer(serializers.Serializer):
     monto = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal('0.01'))
     idempotency_key = serializers.UUIDField(required=False)
 
-
 class ComboLegSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComboLeg

@@ -5,6 +5,7 @@ class Event(models.Model):
     class Estado(models.TextChoices):
         SCHEDULED = 'scheduled', 'Programado'
         LIVE = 'live', 'En vivo'
+        SUSPENDED = 'suspendido', 'Suspendido'
         FINISHED = 'finalizado', 'Finalizado'
         CANCELLED = 'cancelado', 'Cancelado'
 

@@ -6,9 +6,11 @@ psycopg[binary]
 redis
 celery
 channels
+channels-redis>=4.0
 daphne
 #Librerias para test
 coverage
 hypothesis
 #Para protección de variables de entorno
 python-dotenv
+django-filter>=24.0

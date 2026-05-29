@@ -39,7 +39,7 @@ def deposit(request):
     idempotency_key = serializer.validated_data.get('idempotency_key')
 
     limits, _ = DepositLimit.objects.get_or_create(user=user)
-    if amount>limits.daily_limit:
+    if amount > limits.daily_limit:
         return Response({'error': 'Supera el límite diario'}, status=status.HTTP_400_BAD_REQUEST)
 
     from_account, _ = Account.objects.get_or_create(

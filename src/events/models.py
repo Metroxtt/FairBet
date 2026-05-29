@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 
 
@@ -48,7 +49,7 @@ class Market(models.Model):
     cuota_local = models.DecimalField('cuota local', max_digits=10, decimal_places=4)
     cuota_empate = models.DecimalField('cuota empate', max_digits=10, decimal_places=4, null=True, blank=True)
     cuota_visitante = models.DecimalField('cuota visitante', max_digits=10, decimal_places=4)
-    margen = models.DecimalField('margen', max_digits=6, decimal_places=4, default=0.05)
+    margen = models.DecimalField('margen', max_digits=6, decimal_places=4, default=Decimal('0.05'))
     estado = models.CharField('estado', max_length=10, choices=Estado.choices, default=Estado.OPEN)
     created_at = models.DateTimeField('creado el', auto_now_add=True)
     updated_at = models.DateTimeField('actualizado el', auto_now=True)

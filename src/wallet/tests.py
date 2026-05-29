@@ -4,6 +4,7 @@ from decimal import Decimal
 from .models import Account, LedgerEntry, transfer
 from users.models import User
 from hypothesis import given, strategies as st, assume, settings
+from hypothesis.extra.django import TestCase as HypothesisTestCase
 
 
 class WalletTransferTest(TestCase):
@@ -51,19 +52,17 @@ class WalletTransferTest(TestCase):
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('100'), 'Distinto monto', idempotency_key=key)
     def test_transferencia_self_account(self):
-        misma = Account.objects.create(
-            account_type = Account.Tipo.CASA, balance = Decimal('500') 
-        )
         with self.assertRaises(ValueError):
-            transfer(self.from_acct, misma , Decimal('100'),'self tranfer')
+            transfer(self.from_acct, self.from_acct, Decimal('100'), 'self transfer')
 
 
-class HypothesisWalletTest(TestCase):
+class HypothesisWalletTest(HypothesisTestCase):
     def setUp(self):
+        User.objects.filter(email='hypo@test.com').delete()
         self.user = User.objects.create_user(
-            email = 'hypo@test.com', dni = '12345678',
-            nombre = 'Hipothesis', apellido = 'test',
-            fecha_nacimiento = '2000-01-01', password= 'test123'
+            email='hypo@test.com', dni='12345678',
+            nombre='Hipothesis', apellido='test',
+            fecha_nacimiento='2000-01-01', password='test123'
         )
     @given(
         monto = st.decimals(min_value='0.01', max_value='10000',

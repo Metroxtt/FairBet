@@ -4,6 +4,8 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.conf import settings
 from django.db.models import Sum
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Account(models.Model):
@@ -120,3 +122,40 @@ def transfer(from_account, to_account, amount, description, idempotency_key=None
             credit=amount,
             description=description,
         )
+
+
+def check_deposit_limit(user, amount):
+    limit = getattr(user, 'deposit_limit', None)
+    if not limit:
+        from users.models import DepositLimit
+        limit, _ = DepositLimit.objects.get_or_create(user=user)
+    
+    amount = Decimal(str(amount))
+    now = timezone.now()
+    
+    start_of_day = now - timedelta(days=1)
+    start_of_month = now - timedelta(days=30)
+    
+    account = getattr(user, 'wallet_account', None)
+    if not account:
+        return
+
+    daily_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_day
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+
+    monthly_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_month
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+
+    if daily_deposits + amount > limit.daily_limit:
+        raise ValueError(f'Este depósito excede tu límite diario de ${limit.daily_limit}')
+    
+    if monthly_deposits + amount > limit.monthly_limit:
+        raise ValueError(f'Este depósito excede tu límite mensual de ${limit.monthly_limit}')

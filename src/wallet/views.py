@@ -48,14 +48,17 @@ def deposit(request):
     amount = serializer.validated_data['amount']
     idempotency_key = serializer.validated_data.get('idempotency_key')
 
-    limits, _ = DepositLimit.objects.get_or_create(user=user)
-    if amount > limits.daily_limit:
-        return Response({'error': 'Supera el límite diario'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        from .models import check_deposit_limit
+        check_deposit_limit(user, amount)
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    from_account, _ = Account.objects.get_or_create(
-        account_type=Account.Tipo.CASA,
-        defaults={'balance': 1000000}
+    from_account, created = Account.objects.get_or_create(
+        account_type=Account.Tipo.CASA
     )
+    if created:
+        LedgerEntry.objects.create(account=from_account, credit=1000000, description='Fondo inicial Casa')
     to_account, _ = Account.objects.get_or_create(
         user=user,
         account_type=Account.Tipo.WALLET_USUARIO
@@ -91,10 +94,11 @@ def withdraw(request):
         user=user,
         account_type=Account.Tipo.WALLET_USUARIO
     )
-    to_account, _ = Account.objects.get_or_create(
-        account_type=Account.Tipo.CASA,
-        defaults={'balance': 1000000}
+    to_account, created = Account.objects.get_or_create(
+        account_type=Account.Tipo.CASA
     )
+    if created:
+        LedgerEntry.objects.create(account=to_account, credit=1000000, description='Fondo inicial Casa')
 
     try:
         transfer(from_account, to_account, amount, f'Retiro de {user}',

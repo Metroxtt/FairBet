@@ -1,8 +1,9 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import transaction
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import Market
+from .models import Market, Event
 
 @receiver(post_save, sender=Market)
 def broadcast_odds_update(sender, instance, created, **kwargs):
@@ -26,3 +27,12 @@ def broadcast_odds_update(sender, instance, created, **kwargs):
             'data': data
         }
     )
+
+
+@receiver(post_save, sender=Event)
+def auto_settle_bets(sender, instance, **kwargs):
+    if instance.estado == Event.Estado.FINISHED and instance.resultado:
+        def delay_settle():
+            from betting.tasks import settle_bets_for_event
+            settle_bets_for_event.delay(instance.pk)
+        transaction.on_commit(delay_settle)

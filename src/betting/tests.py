@@ -23,13 +23,15 @@ class BetStateMachineTest(TestCase):
             cuota_visitante=Decimal('2.10')
         )
         Account.objects.get_or_create(
-            user=self.user, account_type=Account.Tipo.WALLET_USUARIO
+            user=self.user, account_type=Account.Tipo.WALLET_USUARIO,
+            defaults={'balance': 0}
         )
         Account.objects.get_or_create(
             account_type=Account.Tipo.CASA, defaults={'balance': 1000000}
         )
         Account.objects.get_or_create(
-            account_type=Account.Tipo.APUESTAS_PENDIENTES
+            account_type=Account.Tipo.APUESTAS_PENDIENTES,
+            defaults={'balance': 0}
         )
 
     def test_bet_pending_on_create(self):
@@ -41,12 +43,21 @@ class BetStateMachineTest(TestCase):
         self.assertEqual(bet.estado, Bet.Estado.PENDING)
         self.assertEqual(bet.pago_potencial, Decimal('350'))
 
+    def _simulate_stake_moved(self, bet):
+        from_account = Account.objects.get(user=bet.user, account_type=Account.Tipo.WALLET_USUARIO)
+        to_account = Account.objects.get(account_type=Account.Tipo.APUESTAS_PENDIENTES)
+        from_account.balance -= bet.monto
+        to_account.balance += bet.monto
+        from_account.save()
+        to_account.save()
+
     def test_settle_won_changes_state(self):
         bet = Bet.objects.create(
             user=self.user, event=self.event, market=self.market,
             seleccion='local', cuota_al_apostar=Decimal('2.0'),
             monto=Decimal('100')
         )
+        self._simulate_stake_moved(bet)
         bet.settle('local')
         bet.refresh_from_db()
         self.assertEqual(bet.estado, Bet.Estado.WON)
@@ -57,6 +68,7 @@ class BetStateMachineTest(TestCase):
             seleccion='local', cuota_al_apostar=Decimal('2.0'),
             monto=Decimal('100')
         )
+        self._simulate_stake_moved(bet)
         bet.settle('visita')
         bet.refresh_from_db()
         self.assertEqual(bet.estado, Bet.Estado.LOST)
@@ -67,6 +79,7 @@ class BetStateMachineTest(TestCase):
             seleccion='local', cuota_al_apostar=Decimal('2.0'),
             monto=Decimal('100')
         )
+        self._simulate_stake_moved(bet)
         bet.settle('local')
         with self.assertRaises(ValueError):
             bet.settle('local')
@@ -155,6 +168,85 @@ class PlaceBetValidationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_place_bet_rejects_closed_market(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from rest_framework import status
+        from .views import place_bet
+        from users.models import EstadoUser
+        self.user.estado = EstadoUser.VERIFICADO
+        self.user.save()
+        self.market.estado = Market.Estado.SUSPENDED
+        self.market.save()
+        factory = APIRequestFactory()
+        request = factory.post('/place/', {
+            'event_id': self.event.pk, 'market_id': self.market.pk,
+            'seleccion': 'local', 'monto': '100'
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = place_bet(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class SettleBetsTaskTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='test@test.com', dni='12345678',
+            nombre='Test', apellido='User',
+            fecha_nacimiento='2000-01-01', password='test123'
+        )
+        self.event = Event.objects.create(
+            equipo_local='Peru', equipo_visitante='Brasil',
+            fecha_hora='2026-06-14 15:00:00'
+        )
+        self.market = Market.objects.create(
+            event=self.event, tipo=Market.Tipo.ONE_X_TWO,
+            cuota_local=Decimal('3.50'), cuota_empate=Decimal('3.20'),
+            cuota_visitante=Decimal('2.10')
+        )
+        Account.objects.get_or_create(
+            user=self.user, account_type=Account.Tipo.WALLET_USUARIO,
+            defaults={'balance': 1000}
+        )
+        Account.objects.get_or_create(
+            account_type=Account.Tipo.CASA, defaults={'balance': 1000000}
+        )
+        Account.objects.get_or_create(
+            account_type=Account.Tipo.APUESTAS_PENDIENTES,
+            defaults={'balance': 0}
+        )
+
+    def test_settle_bets_task_liquidates_pending_bets(self):
+        from .tasks import settle_bets_for_event
+        bet = Bet.objects.create(
+            user=self.user, event=self.event, market=self.market,
+            seleccion='local', cuota_al_apostar=Decimal('2.0'),
+            monto=Decimal('100')
+        )
+        from_account = Account.objects.get(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
+        to_account = Account.objects.get(account_type=Account.Tipo.APUESTAS_PENDIENTES)
+        from_account.balance -= bet.monto
+        to_account.balance += bet.monto
+        from_account.save()
+        to_account.save()
+
+        self.event.resultado = 'local'
+        self.event.save()
+
+        result = settle_bets_for_event(self.event.pk)
+        bet.refresh_from_db()
+        self.assertEqual(bet.estado, Bet.Estado.WON)
+        self.assertIn('Liquidadas', result)
+
+    def test_settle_bets_task_without_result_does_nothing(self):
+        from .tasks import settle_bets_for_event
+        bet = Bet.objects.create(
+            user=self.user, event=self.event, market=self.market,
+            seleccion='local', cuota_al_apostar=Decimal('2.0'),
+            monto=Decimal('100')
+        )
+        result = settle_bets_for_event(self.event.pk)
+        bet.refresh_from_db()
+        self.assertEqual(bet.estado, Bet.Estado.PENDING)
+        self.assertIn('no tiene resultado', result)
         from rest_framework.test import APIRequestFactory, force_authenticate
         from rest_framework import status
         from .views import place_bet

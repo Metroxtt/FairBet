@@ -48,6 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     fecha_exclusion = models.DateTimeField('fecha de autoexclusión', null=True, blank=True)
     fecha_fin_exclusion = models.DateTimeField('fin de autoexclusión', null=True, blank=True)
     
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField('fecha de registro', auto_now_add=True)
 
@@ -92,6 +93,7 @@ class DepositLimit(models.Model):
     daily_limit = models.DecimalField('límite diario', max_digits=18, decimal_places=4, default=500)
     weekly_limit = models.DecimalField('límite semanal', max_digits=18, decimal_places=4, default=2000)
     monthly_limit = models.DecimalField('límite mensual', max_digits=18, decimal_places=4, default=5000)
+    cooldown_hasta = models.DateTimeField('cooldown hasta', null=True, blank=True)
     updated_at = models.DateTimeField('actualizado el', auto_now=True)
 
     class Meta:

@@ -11,4 +11,4 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(DepositLimit)
 class DepositLimitAdmin(admin.ModelAdmin):
-    list_display = ['user', 'daily_limit', 'weekly_limit', 'monthly_limit']
+    list_display = ['user', 'daily_limit', 'weekly_limit', 'monthly_limit', 'cooldown_hasta']

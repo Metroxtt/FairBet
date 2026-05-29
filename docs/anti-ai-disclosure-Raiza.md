@@ -17,3 +17,9 @@
     irreversibilidad de autoexclusion, estado read-only.
   - Mejora en create_user: conversion de fecha y creacion de DepositLimit.
   - ADRs documentando decisiones tecnicas.
+## Tercera sesion (28 de Mayo del 2026)
+- Revision conjunta con el equipo y ajustes finales:
+  - Agregado campo is_active al modelo User (requerido por Django auth).
+  - Agregado endpoint verify-kyc/ para completar el flujo KYC simulado.
+  - Reemplazada logica de cooldown por campo cooldown_hasta separado.
+  - Tests para verify-kyc y cooldown_hasta.

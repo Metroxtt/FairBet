@@ -106,11 +106,8 @@ class UserModelTest(TestCase):
         )
         limite = user.deposit_limit
         limite.daily_limit = 100
+        limite.cooldown_hasta = timezone.now() + timedelta(hours=24)
         limite.save()
-        
-        limite.updated_at = timezone.now() - timedelta(hours=2)
-        DepositLimit.objects.filter(pk=limite.pk).update(updated_at=limite.updated_at)
-        limite.refresh_from_db()
         
         data = {'daily_limit': 500}
         serializer = DepositLimitSerializer(
@@ -193,4 +190,72 @@ class RegisterSerializerTest(TestCase):
         request = factory.post('/self-exclude/', {'plazo': 'indefinido'})
         force_authenticate(request, user=user)
         response = self_exclude(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)                
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_kyc_exitoso(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from rest_framework import status
+        from .views import verify_kyc
+        user = User.objects.create_user(
+            email='pendiente@test.com',
+            dni='12345678', nombre='Pendiente', apellido='Test',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        self.assertEqual(user.estado, EstadoUser.PENDIENTE_VERIFICACION)
+        factory = APIRequestFactory()
+        request = factory.post('/verify-kyc/', {'confirmar': True}, format='json')
+        force_authenticate(request, user=user)
+        response = verify_kyc(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertEqual(user.estado, EstadoUser.VERIFICADO)
+
+    def test_verify_kyc_ya_verificado_rechaza(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from rest_framework import status
+        from .views import verify_kyc
+        user = User.objects.create_user(
+            email='yaverificado@test.com',
+            dni='12345678', nombre='Ya', apellido='Verificado',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        user.estado = EstadoUser.VERIFICADO
+        user.save()
+        factory = APIRequestFactory()
+        request = factory.post('/verify-kyc/', {'confirmar': True}, format='json')
+        force_authenticate(request, user=user)
+        response = verify_kyc(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_kyc_sin_confirmar_rechaza(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from rest_framework import status
+        from .views import verify_kyc
+        user = User.objects.create_user(
+            email='sconfirmar@test.com',
+            dni='12345678', nombre='Sin', apellido='Confirmar',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        factory = APIRequestFactory()
+        request = factory.post('/verify-kyc/', {'confirmar': False}, format='json')
+        force_authenticate(request, user=user)
+        response = verify_kyc(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cooldown_hasta_al_subir_limite(self):
+        user = User.objects.create_user(
+            email='cooldown@test.com',
+            dni='12345678', nombre='Cooldown', apellido='Test',
+            fecha_nacimiento='2000-01-01', password='testpass123'
+        )
+        limite = user.deposit_limit
+        data = {'daily_limit': 1000}
+        serializer = DepositLimitSerializer(
+            instance=limite, data=data, partial=True,
+            context={'request': type('Req', (), {'user': user})()}
+        )
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        limite.refresh_from_db()
+        self.assertIsNotNone(limite.cooldown_hasta)
+        self.assertTrue(limite.cooldown_hasta > timezone.now())

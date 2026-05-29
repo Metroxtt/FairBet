@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from events.models import Event, Market
 from wallet.models import Account, transfer
 from .models import Bet
+from .serializers import BetSerializer
 
 
 class BetHistoryView(generics.ListAPIView):
@@ -12,8 +13,6 @@ class BetHistoryView(generics.ListAPIView):
 
     def get_queryset(self):
         return Bet.objects.filter(user=self.request.user)
-
-    from .serializers import BetSerializer
 
 
 @api_view(['POST'])

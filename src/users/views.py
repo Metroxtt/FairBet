@@ -2,7 +2,10 @@ from .models import User, DepositLimit, EstadoUser
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .serializers import RegisterSerializer, UserSerializer, DepositLimitSerializer
+from .serializers import (
+    RegisterSerializer, UserSerializer, DepositLimitSerializer,
+    VerifyKYCSerializer,
+)
 from datetime import timedelta
 from django.utils import timezone
 
@@ -32,10 +35,12 @@ class DepositLimitView(generics.RetrieveUpdateAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def self_exclude(request):
     user = request.user
-    
+
     if user.esta_autoexcluido:
-        return Response({'error': 'Ya estás autoexcluido. No puedes autoexcluirte nuevamente.'}, 
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'error': 'Ya estás autoexcluido. No puedes autoexcluirte nuevamente.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     plazo = request.data.get('plazo', 'indefinido')
     user.estado = EstadoUser.AUTOEXCLUIDO
     user.fecha_exclusion = timezone.now()
@@ -49,3 +54,26 @@ def self_exclude(request):
         user.fecha_fin_exclusion = None
     user.save(update_fields=['estado', 'fecha_exclusion', 'fecha_fin_exclusion'])
     return Response({'mensaje': 'Usuario autoexcluido correctamente'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def verify_kyc(request):
+    user = request.user
+
+    if user.estado != EstadoUser.PENDIENTE_VERIFICACION:
+        return Response(
+            {'error': f'La cuenta ya está en estado: {user.get_estado_display()}'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = VerifyKYCSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    user.estado = EstadoUser.VERIFICADO
+    user.save(update_fields=['estado'])
+
+    return Response(
+        {'mensaje': 'Cuenta verificada correctamente', 'estado': user.estado},
+        status=status.HTTP_200_OK,
+    )

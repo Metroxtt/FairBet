@@ -23,6 +23,10 @@ def place_bet(request):
 
     user = request.user
 
+    if not user.es_verificado:
+        return Response({'error': 'Debe verificar su cuenta KYC antes de apostar'},
+                        status=status.HTTP_403_FORBIDDEN)
+
     if user.esta_autoexcluido:
         return Response({'error': 'Usuario autoexcluido no puede apostar'},
                         status=status.HTTP_403_FORBIDDEN)
@@ -33,6 +37,10 @@ def place_bet(request):
     except (Event.DoesNotExist, Market.DoesNotExist) as e:
         return Response({'error': 'Evento o mercado no encontrado'},
                         status=status.HTTP_404_NOT_FOUND)
+
+    if event.estado != Event.Estado.SCHEDULED:
+        return Response({'error': 'El evento no esta disponible para apuestas'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     if market.estado != Market.Estado.OPEN:
         return Response({'error': 'Mercado no disponible'},
@@ -49,11 +57,19 @@ def place_bet(request):
 
     cuota = cuota_map.get(seleccion)
     if not cuota:
-        return Response({'error': 'Selección inválida'},
+        return Response({'error': 'Seleccion invalida'},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    from_account = Account.objects.get(user=user, account_type=Account.Tipo.WALLET_USUARIO)
-    to_account = Account.objects.get(account_type=Account.Tipo.APUESTAS_PENDIENTES)
+    from_account, _ = Account.objects.get_or_create(
+        user=user, account_type=Account.Tipo.WALLET_USUARIO
+    )
+    to_account, _ = Account.objects.get_or_create(
+        account_type=Account.Tipo.APUESTAS_PENDIENTES
+    )
+
+    if from_account.balance < monto:
+        return Response({'error': 'Saldo insuficiente para realizar la apuesta'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     try:
         transfer(from_account, to_account, monto,

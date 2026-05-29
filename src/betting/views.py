@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from events.models import Event, Market
 from wallet.models import Account, transfer
 from .models import Bet
-from .serializers import BetSerializer
+from .serializers import BetSerializer, PlaceBetSerializer
 
 
 class BetHistoryView(generics.ListAPIView):
@@ -18,13 +18,12 @@ class BetHistoryView(generics.ListAPIView):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def place_bet(request):
-    from .serializers import PlaceBetSerializer
     serializer = PlaceBetSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
     user = request.user
 
-    if user.is_excluded:
+    if user.esta_autoexcluido:
         return Response({'error': 'Usuario autoexcluido no puede apostar'},
                         status=status.HTTP_403_FORBIDDEN)
 
@@ -67,5 +66,4 @@ def place_bet(request):
         seleccion=seleccion, cuota_al_apostar=cuota, monto=monto
     )
 
-    from .serializers import BetSerializer
     return Response(BetSerializer(bet).data, status=status.HTTP_201_CREATED)

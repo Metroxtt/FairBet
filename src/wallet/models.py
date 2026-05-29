@@ -57,6 +57,9 @@ def transfer(from_account, to_account, amount, description, idempotency_key=None
     if amount <= 0:
         raise ValueError('El monto debe ser positivo')
 
+    if from_account.pk == to_account.pk:
+        raise ValueError('No puedes transferir a la misma cuenta')
+
     with transaction.atomic():
         from_acct = Account.objects.select_for_update().get(pk=from_account.pk)
         to_acct = Account.objects.select_for_update().get(pk=to_account.pk)

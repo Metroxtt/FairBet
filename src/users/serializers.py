@@ -13,16 +13,18 @@ class RegisterSerializer(serializers.ModelSerializer):
                 'fecha_nacimiento', 'password', 'confirmar_password']
 
     def validate_dni(self, value):
-        if not value.isdigit() or len(value) != 8:
-            raise serializers.ValidationError('El DNI debe tener 8 dígitos numéricos')
+        if not value.isdigit() or len(value) != 9:
+            raise serializers.ValidationError('El DNI debe tener 8 digitos + su codigo de verificacion numéricos')
         pesos = [3, 2, 7, 6, 5, 4, 3, 2]
-        suma = sum(int(d) * p for d, p in zip(value, pesos))
-        digito_esperado = 11 - (suma % 11)
-        if digito_esperado == 11:
-            digito_esperado = 0
-        elif digito_esperado == 10:
-            digito_esperado = 1
-        if digito_esperado != int(value[-1]):
+        suma = sum(int(d) * p for d, p in zip(value[:8], pesos))
+        resto = suma % 11
+        digito = 11 - resto
+        if digito == 11:
+            digito = 0
+        digito += 1
+        serie = "67890112345"
+        digito_esperado= serie[digito - 1]
+        if digito_esperado != value[-1]:
             raise serializers.ValidationError('El DNI no es válido')
         return value
 

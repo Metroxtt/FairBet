@@ -33,7 +33,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    dni = models.CharField('DNI', max_length=8, unique=True)
+    dni = models.CharField('DNI', max_length=9, unique=True)
     email = models.EmailField('correo electrónico', unique=True)
     nombre = models.CharField('nombres', max_length=100)
     apellido = models.CharField('apellidos', max_length=100)

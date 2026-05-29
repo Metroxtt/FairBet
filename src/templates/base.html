@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BetZone{% endblock %} — FairBet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/betzone.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  {% if user.is_authenticated %}
+    {% include 'components/_sidebar.html' %}
+    <div class="main">
+      {% include 'components/_topbar.html' %}
+      <div class="content">
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert-banner alert-{{ message.tags }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+  {% else %}
+    {% block auth_content %}{% endblock %}
+  {% endif %}
+
+  <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-left:230px;">
+    Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
+  </footer>
+
+  <script src="{% static 'js/auth.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

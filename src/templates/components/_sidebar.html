@@ -1,0 +1,35 @@
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-name">BETZONE</div>
+    <div class="logo-tag">FairBet Lab</div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-section">Navegación</div>
+
+    <a href="/" class="nav-item">
+      <span class="nav-icon">🏠</span> Inicio
+    </a>
+    <a href="/events/" class="nav-item">
+      <span class="nav-icon">⚽</span> Eventos
+    </a>
+    <a href="/wallet/" class="nav-item">
+      <span class="nav-icon">💰</span> Mi Billetera
+    </a>
+    <a href="/profile/" class="nav-item">
+      <span class="nav-icon">👤</span> Mi Perfil
+    </a>
+    <a href="/bets/" class="nav-item">
+      <span class="nav-icon">🎯</span> Mis Apuestas
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <form method="POST" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="nav-item" style="width:100%; border:none; background:none; cursor:pointer;">
+        <span class="nav-icon">🚪</span> Cerrar Sesión
+      </button>
+    </form>
+  </div>
+</nav>

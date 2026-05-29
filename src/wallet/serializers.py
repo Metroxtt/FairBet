@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 from .models import Account, LedgerEntry
 from decimal import Decimal

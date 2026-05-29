@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import User, DepositLimit
 
@@ -9,7 +10,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['dni', 'email', 'nombre', 'apellido', 'telefono',
-                  'fecha_nacimiento', 'password', 'confirmar_password']
+                'fecha_nacimiento', 'password', 'confirmar_password']
 
     def validate_dni(self, value):
         if not value.isdigit() or len(value) != 8:
@@ -54,10 +55,59 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'dni', 'email', 'nombre', 'apellido', 'telefono',
-                  'fecha_nacimiento', 'edad', 'is_excluded', 'date_joined']
+                'fecha_nacimiento', 'edad', 'estado', 'date_joined', 'is_active']
+        read_only_fields = ['estado', 'is_active']
 
 
 class DepositLimitSerializer(serializers.ModelSerializer):
+    en_cooldown = serializers.SerializerMethodField()
+
     class Meta:
         model = DepositLimit
-        fields = ['daily_limit', 'weekly_limit', 'monthly_limit', 'updated_at']
+        fields = ['daily_limit', 'weekly_limit', 'monthly_limit',
+                  'cooldown_hasta', 'en_cooldown', 'updated_at']
+        read_only_fields = ['cooldown_hasta', 'en_cooldown', 'updated_at']
+
+    def get_en_cooldown(self, obj):
+        return bool(obj.cooldown_hasta and obj.cooldown_hasta > timezone.now())
+
+    def validate(self, data):
+        user = self.context['request'].user
+
+        if user.esta_autoexcluido:
+            raise serializers.ValidationError(
+                'No puedes cambiar tus límites mientras estés autoexcluido'
+            )
+
+        instance = self.instance
+        for campo in ['daily_limit', 'weekly_limit', 'monthly_limit']:
+            if campo in data and instance:
+                nuevo_valor = data[campo]
+                valor_actual = getattr(instance, campo)
+                if nuevo_valor > valor_actual and self.get_en_cooldown(instance):
+                    raise serializers.ValidationError({
+                        campo: (
+                            f'Deben pasar 24h para subir este límite. '
+                            f'Válido desde {instance.cooldown_hasta.strftime("%d/%m/%Y %H:%M")}'
+                        )
+                    })
+        return data
+
+    def update(self, instance, validated_data):
+        for campo in ['daily_limit', 'weekly_limit', 'monthly_limit']:
+            if (
+                campo in validated_data
+                and validated_data[campo] > getattr(instance, campo)
+            ):
+                validated_data['cooldown_hasta'] = timezone.now() + timezone.timedelta(hours=24)
+                break
+        return super().update(instance, validated_data)
+
+
+class VerifyKYCSerializer(serializers.Serializer):
+    confirmar = serializers.BooleanField(write_only=True)
+
+    def validate_confirmar(self, value):
+        if not value:
+            raise serializers.ValidationError('Debe confirmar la verificación KYC')
+        return value

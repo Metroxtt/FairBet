@@ -44,7 +44,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (res.ok) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
-        window.location.href = '/';
+        // Enviar el formulario al servidor para crear la sesion Django
+        form.submit();
     } else {
         alert('Credenciales inválidas. Verifica tu correo y contraseña.');
     }

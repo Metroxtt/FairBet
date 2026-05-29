@@ -13,8 +13,14 @@ class EventViewSet(viewsets.ModelViewSet):
     search_fields = ['equipo_local', 'equipo_visitante']
 
 
+from django.shortcuts import render
+
 class MarketViewSet(viewsets.ModelViewSet):
     queryset = Market.objects.all()
     serializer_class = MarketSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filterset_fields = ['event', 'estado', 'tipo']
+
+def event_list_view(request):
+    events = Event.objects.all().order_by('fecha_hora')
+    return render(request, 'events/list.html', {'events': events, 'page_title': 'Eventos'})

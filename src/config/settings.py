@@ -15,7 +15,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-t^kmfvz&y&w1e&ig)*j
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
-
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',

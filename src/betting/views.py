@@ -7,6 +7,14 @@ from wallet.models import Account, transfer
 from .models import Bet
 from .serializers import BetSerializer, PlaceBetSerializer
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def betting_history_view(request):
+    bets = Bet.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'betting/history.html', {'bets': bets, 'page_title': 'Mis Apuestas'})
+
 
 class BetHistoryView(generics.ListAPIView):
     serializer_class = BetSerializer

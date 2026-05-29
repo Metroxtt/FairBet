@@ -3,10 +3,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 
-# Redirige al inicio a la pagina de eventos
+# Vista del Dashboard Principal
 @login_required
 def home_view(request):
-    return redirect('/events/')
+    return render(request, 'home.html', {'page_title': 'Dashboard'})
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
 def login_view(request):

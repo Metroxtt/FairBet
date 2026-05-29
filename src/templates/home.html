@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Balance Total</div>
+    <div class="stat-value gold">S/ 1,240</div>
+    <div class="stat-sub"><span class="up">▲ +8.4%</span> este mes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Apuestas Activas</div>
+    <div class="stat-value">7</div>
+    <div class="stat-sub">3 <span class="up">en vivo</span> · 4 pendientes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Ganancia Mes</div>
+    <div class="stat-value green">S/ 380</div>
+    <div class="stat-sub"><span class="up">▲ 62%</span> win rate</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Eventos Hoy</div>
+    <div class="stat-value">48</div>
+    <div class="stat-sub">12 deportes disponibles</div>
+  </div>
+</div>
+
+<div class="promo-banner">
+  <div style="font-size:36px">🏆</div>
+  <div class="promo-text">
+    <h3>Bono de Bienvenida — 100% hasta S/ 500</h3>
+    <p>Deposita hoy y duplica tu primer depósito. Aplica T&C.</p>
+  </div>
+  <button class="btn btn-gold" style="margin-left:auto;margin-right:60px;flex-shrink:0" onclick="window.location.href='/wallet/'">Depositar ahora</button>
+</div>
+
+<div class="grid2">
+  <!-- Eventos destacados -->
+  <div>
+    <div class="section-header">
+      <div class="section-title">Eventos <span>Destacados</span></div>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='/events/'">Ver todos</button>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Evento</th>
+            <th>1</th>
+            <th>X</th>
+            <th>2</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="featuredEvents">
+          <!-- TODO: Load dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Últimas apuestas -->
+  <div>
+    <div class="section-header">
+      <div class="section-title">Últimas <span>Apuestas</span></div>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Evento</th><th>Cuota</th><th>Monto</th><th>Estado</th></tr>
+        </thead>
+        <tbody id="lastBets">
+          <!-- TODO: Load dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Transacciones recientes -->
+<div class="section-header">
+  <div class="section-title">Movimientos <span>Recientes</span></div>
+  <button class="btn btn-outline btn-sm" onclick="window.location.href='/wallet/'">Ver historial</button>
+</div>
+<div class="card" id="recentTx">
+  <!-- TODO: Load dynamically -->
+</div>
+{% endblock %}

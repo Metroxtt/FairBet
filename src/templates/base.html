@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}BetZone{% endblock %} — FairBet</title>
+  <title>{% block title %}FairBet{% endblock %} — Plataforma Educativa</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   {% load static %}
-  <link rel="stylesheet" href="{% static 'css/betzone.css' %}">
+  <link rel="stylesheet" href="{% static 'css/fairbet.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -28,6 +28,8 @@
         {% block content %}{% endblock %}
       </div>
     </div>
+
+    {% include 'components/_bet_slip.html' %}
 
     <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-left:230px;">
       Plataforma educativa con moneda virtual. No constituye una casa de apuestas.

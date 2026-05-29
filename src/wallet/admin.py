@@ -11,6 +11,6 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(LedgerEntry)
 class LedgerEntryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'account', 'debit', 'credit', 'balance_after', 'description', 'created_at']
+    list_display = ['id', 'account', 'debit', 'credit', 'hash', 'description', 'created_at']
     list_filter = ['created_at']
-    readonly_fields = ['id', 'created_at']
+    readonly_fields = ['id', 'created_at', 'hash', 'previous_hash']

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Eventos{% endblock %}
+
+{% block content %}
+<div class="sport-filters">
+  <button class="sport-filter active" onclick="filterSport(this,'Todos')">🌐 Todos</button>
+  <button class="sport-filter" onclick="filterSport(this,'Fútbol')">⚽ Fútbol</button>
+  <button class="sport-filter" onclick="filterSport(this,'Baloncesto')">🏀 Baloncesto</button>
+  <button class="sport-filter" onclick="filterSport(this,'Tenis')">🎾 Tenis</button>
+  <button class="sport-filter" onclick="filterSport(this,'Boxeo')">🥊 Boxeo</button>
+  <button class="sport-filter" onclick="filterSport(this,'eSports')">🎮 eSports</button>
+  <button class="sport-filter" onclick="filterSport(this,'Béisbol')">⚾ Béisbol</button>
+</div>
+
+<div class="events-grid" id="eventsGrid">
+  {% for event in events %}
+  <div class="event-card" onclick="openEventDetails({{ event.id }})">
+    <div class="event-banner football">
+      {% if event.estado == 'live' %}
+      <div class="event-live-badge">LIVE</div>
+      {% endif %}
+      <!-- Sport Icon based on sport type later -->
+    </div>
+    <div class="event-body">
+      <div class="event-sport">Fútbol</div>
+      <div class="event-teams">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</div>
+      <div class="event-time">{{ event.fecha_hora|date:"d/m H:i" }}</div>
+      <div class="event-odds">
+        <!-- We will populate markets here dynamically or via template tags -->
+        <div class="odd-btn">
+          <span class="odd-label">1</span>
+          <span class="odd-value">-</span>
+        </div>
+        <div class="odd-btn">
+          <span class="odd-label">X</span>
+          <span class="odd-value">-</span>
+        </div>
+        <div class="odd-btn">
+          <span class="odd-label">2</span>
+          <span class="odd-value">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <p style="color: var(--muted); grid-column: span 3; text-align: center; padding: 40px;">No hay eventos disponibles.</p>
+  {% endfor %}
+</div>
+{% endblock %}

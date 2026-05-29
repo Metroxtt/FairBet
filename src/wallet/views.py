@@ -4,6 +4,16 @@ from rest_framework.response import Response
 from .models import Account, LedgerEntry, transfer
 from .serializers import AccountSerializer, LedgerEntrySerializer, DepositSerializer,WithdrawSerializer
 from users.models import DepositLimit
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def wallet_index_view(request):
+    account, _ = Account.objects.get_or_create(
+        user=request.user, account_type=Account.Tipo.WALLET_USUARIO
+    )
+    transactions = LedgerEntry.objects.filter(account=account).order_by('-created_at')[:20]
+    return render(request, 'wallet/index.html', {'account': account, 'transactions': transactions, 'page_title': 'Mi Billetera'})
 
 
 class BalanceView(generics.RetrieveAPIView):

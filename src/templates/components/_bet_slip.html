@@ -1,0 +1,64 @@
+<!-- BET SLIP PANEL -->
+<div class="bet-slip-panel" id="betSlip">
+  <div class="bet-slip-header">
+    <div class="bet-slip-title">Ticket de Apuesta</div>
+    <button class="close-btn" onclick="closeBetSlip()">×</button>
+  </div>
+  <div class="bet-slip-content" id="betSlipContent">
+    <div class="bet-slip-empty" id="betSlipEmpty">
+      <div class="icon">🎟️</div>
+      Selecciona una cuota para añadirla a tu ticket
+    </div>
+    <div id="betSlipItems" style="display:none;">
+      <div class="slip-item">
+        <div class="slip-item-top">
+          <div class="slip-item-teams" id="slipEvent">Equipo A vs Equipo B</div>
+          <button class="slip-remove" onclick="clearBetSlip()">🗑️</button>
+        </div>
+        <div class="slip-item-pick" id="slipPick">1 - Equipo A</div>
+        <div class="slip-item-odd" id="slipOdd">2.10</div>
+        <div class="stake-row">
+          <input type="number" class="stake-input" id="stakeInput" placeholder="Monto S/" oninput="updatePotentialWin()">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bet-slip-footer">
+    <div class="bet-summary">
+      <div class="bet-summary-row">
+        <span>Cuota Total:</span>
+        <span id="totalOdd">0.00</span>
+      </div>
+      <div class="bet-summary-row total">
+        <span>Pago Potencial:</span>
+        <span id="potentialWin">S/ 0.00</span>
+      </div>
+    </div>
+    <button class="btn btn-gold" style="width:100%; justify-content:center;" onclick="placeBet()" id="placeBetBtn" disabled>Realizar Apuesta</button>
+  </div>
+</div>
+
+<script>
+  function openBetSlip() {
+    document.getElementById('betSlip').classList.add('open');
+  }
+  function closeBetSlip() {
+    document.getElementById('betSlip').classList.remove('open');
+  }
+  // Mock logic to be integrated with API later
+  function updatePotentialWin() {
+    const odd = parseFloat(document.getElementById('totalOdd').innerText) || 0;
+    const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
+    const potential = (odd * stake).toFixed(2);
+    document.getElementById('potentialWin').innerText = `S/ ${potential}`;
+    document.getElementById('placeBetBtn').disabled = stake <= 0;
+  }
+  function clearBetSlip() {
+    document.getElementById('betSlipItems').style.display = 'none';
+    document.getElementById('betSlipEmpty').style.display = 'block';
+    document.getElementById('slipCount').innerText = '0';
+    document.getElementById('totalOdd').innerText = '0.00';
+    document.getElementById('stakeInput').value = '';
+    updatePotentialWin();
+  }
+</script>

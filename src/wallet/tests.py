@@ -1,4 +1,3 @@
-
 from django.test import TestCase
 from decimal import Decimal
 from .models import Account, LedgerEntry, transfer
@@ -14,17 +13,13 @@ class WalletTransferTest(TestCase):
             nombre='Test', apellido='User',
             fecha_nacimiento='2000-01-01', password='test123'
         )
-        self.from_acct = Account.objects.create(
-            account_type=Account.Tipo.CASA, balance=Decimal('1000')
-        )
-        self.to_acct = Account.objects.create(
-            user=self.user, account_type=Account.Tipo.WALLET_USUARIO
-        )
+        self.from_acct = Account.objects.create(account_type=Account.Tipo.CASA)
+        LedgerEntry.objects.create(account=self.from_acct, credit=Decimal('1000'), description='Saldo Inicial Casa')
+
+        self.to_acct = Account.objects.create(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
 
     def test_transferencia_exitosa(self):
         transfer(self.from_acct, self.to_acct, Decimal('100'), 'Test transfer')
-        self.from_acct.refresh_from_db()
-        self.to_acct.refresh_from_db()
         self.assertEqual(self.from_acct.balance, Decimal('900'))
         self.assertEqual(self.to_acct.balance, Decimal('100'))
 
@@ -42,15 +37,18 @@ class WalletTransferTest(TestCase):
     def test_monto_cero(self):
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('0'), 'Monto cero')
+
     def test_monto_negativo(self):
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('-50'), 'Monto negativo' )
+
     def test_idempotencia_monto_distinto(self):
         from uuid import uuid4
         key = uuid4()
         transfer(self.from_acct, self.to_acct, Decimal('50'), 'Original', idempotency_key=key)
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.to_acct, Decimal('100'), 'Distinto monto', idempotency_key=key)
+
     def test_transferencia_self_account(self):
         with self.assertRaises(ValueError):
             transfer(self.from_acct, self.from_acct, Decimal('100'), 'self transfer')
@@ -64,20 +62,18 @@ class HypothesisWalletTest(HypothesisTestCase):
             nombre='Hipothesis', apellido='test',
             fecha_nacimiento='2000-01-01', password='test123'
         )
+
     @given(
         monto = st.decimals(min_value='0.01', max_value='10000',
                             allow_nan=False, allow_infinity=False, places=4)
     )
     @settings(max_examples=50)
     def test_invarianza_partida_doble(self,monto):
-        from_acct = Account.objects.create(
-            account_type = Account.Tipo.CASA, balance = Decimal('1000000')
-        )
-        to_acct = Account.objects.create(
-            user= self.user, account_type=Account.Tipo.WALLET_USUARIO
-        )
+        from_acct = Account.objects.create(account_type=Account.Tipo.CASA)
+        LedgerEntry.objects.create(account=from_acct, credit=Decimal('1000000'), description='Init')
+        to_acct = Account.objects.create(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
 
-        transfer(from_acct,to_acct,monto, 'TEST HYPOTHESIS')
+        transfer(from_acct, to_acct, monto, 'TEST HYPOTHESIS')
 
         total_debits = sum(LedgerEntry.objects.values_list('debit',flat=True))
         total_credits = sum(LedgerEntry.objects.values_list('credit',flat=True))
@@ -86,42 +82,31 @@ class HypothesisWalletTest(HypothesisTestCase):
     @given(
         monto = st.decimals(min_value='0.01', max_value='10000',
                             allow_nan=False, allow_infinity=False, places=4)
-
     )
     @settings(max_examples=50)
     def test_saldo_nunca_negativo(self,monto):
-        from_acct = Account.objects.create(
-            account_type = Account.Tipo.CASA, balance = Decimal('5000')
-        )
-        to_acct = Account.objects.create(
-            user = self.user, account_type=Account.Tipo.WALLET_USUARIO
-
-        )
+        from_acct = Account.objects.create(account_type=Account.Tipo.CASA)
+        LedgerEntry.objects.create(account=from_acct, credit=Decimal('5000'), description='Init')
+        to_acct = Account.objects.create(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
+        
         assume(monto <= from_acct.balance)
 
-        transfer(from_acct, to_acct, monto,'TEST SALDO NEGATIVO')
-        from_acct.refresh_from_db()
-        to_acct.refresh_from_db()
+        transfer(from_acct, to_acct, monto, 'TEST SALDO NEGATIVO')
 
         self.assertGreaterEqual(from_acct.balance, Decimal('0'))
         self.assertGreaterEqual(to_acct.balance, Decimal('0'))
 
-    @given(
-        monto=st.decimals(min_value='0.01',max_value='10000',allow_nan=False,allow_infinity=False,places=4)
-    )
-    @settings(max_examples=50)
-    def test_balance_after_correcto(self,monto):
-        from_acct = Account.objects.create(
-            account_type= Account.Tipo.CASA, balance = Decimal('1000000')
-        )
-        to_acct = Account.objects.create(
-            user = self.user , account_type = Account.Tipo.WALLET_USUARIO
-        )
-        transfer(from_acct, to_acct, monto,'TEST BALANCE AFTER')
-
-        entries = LedgerEntry.objects.filter(account= to_acct)
-        for entry in entries:
-            esperado = Decimal('0') + entry.credit - entry.debit
-            self.assertEqual(entry.balance_after,esperado)
+    def test_generacion_hash_inmutable(self):
+        from_acct = Account.objects.create(account_type=Account.Tipo.CASA)
+        LedgerEntry.objects.create(account=from_acct, credit=Decimal('1000'), description='Init')
+        to_acct = Account.objects.create(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
         
-    
+        transfer(from_acct, to_acct, Decimal('100'), 'Test hash 1')
+        transfer(from_acct, to_acct, Decimal('200'), 'Test hash 2')
+        
+        entries = LedgerEntry.objects.filter(account=to_acct).order_by('created_at', 'id')
+        
+        for i, entry in enumerate(entries):
+            self.assertIsNotNone(entry.hash)
+            if i > 0:
+                self.assertEqual(entry.previous_hash, entries[i-1].hash)

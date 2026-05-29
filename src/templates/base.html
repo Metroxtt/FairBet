@@ -29,13 +29,17 @@
       </div>
     </div>
 
+    <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-left:230px;">
+      Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
+    </footer>
+
   {% else %}
     {% block auth_content %}{% endblock %}
-  {% endif %}
 
-  <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-left:230px;">
-    Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
-  </footer>
+    <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border);">
+      Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
+    </footer>
+  {% endif %}
 
   <script src="{% static 'js/auth.js' %}"></script>
   {% block extra_js %}{% endblock %}

@@ -1,5 +1,5 @@
 <header class="topbar">
-  <div class="page-title">{% block page_title %}FairBet{% endblock %}</div>
+  <div class="page-title">{{ page_title|default:'FairBet' }}</div>
   <div class="topbar-right">
     <div class="wallet-chip" onclick="window.location.href='/wallet/'">
       <span>S/.</span>

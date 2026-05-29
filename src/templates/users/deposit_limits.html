@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Límites de Depósito{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;">
+
+  <div class="section-header">
+    <div class="section-title">LÍMITES DE <span>DEPÓSITO</span></div>
+  </div>
+
+  <div class="card" style="padding:24px;">
+    <p style="color:var(--muted); margin-bottom:20px; font-size:14px;">
+      ⬇️ <strong>Bajar</strong> el límite es <strong>inmediato</strong>.<br>
+      ⬆️ <strong>Subirlo</strong> requiere esperar <strong>24 horas</strong> (cooldown).
+    </p>
+
+    <!-- Barras de progreso de límites -->
+    <div style="margin-bottom:24px;">
+      <div class="form-label">Límite diario</div>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+        <div style="flex:1; height:8px; background:var(--bg3); border-radius:4px; overflow:hidden;">
+          <div id="daily-bar" style="height:100%; width:0%; background:var(--gold); border-radius:4px; transition:width .3s;"></div>
+        </div>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:var(--gold); font-weight:700; min-width:80px; text-align:right;">S/. <span id="daily-label">0</span></span>
+      </div>
+
+      <div class="form-label">Límite semanal</div>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+        <div style="flex:1; height:8px; background:var(--bg3); border-radius:4px; overflow:hidden;">
+          <div id="weekly-bar" style="height:100%; width:0%; background:var(--gold); border-radius:4px; transition:width .3s;"></div>
+        </div>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:var(--gold); font-weight:700; min-width:80px; text-align:right;">S/. <span id="weekly-label">0</span></span>
+      </div>
+
+      <div class="form-label">Límite mensual</div>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+        <div style="flex:1; height:8px; background:var(--bg3); border-radius:4px; overflow:hidden;">
+          <div id="monthly-bar" style="height:100%; width:0%; background:var(--gold); border-radius:4px; transition:width .3s;"></div>
+        </div>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:var(--gold); font-weight:700; min-width:80px; text-align:right;">S/. <span id="monthly-label">0</span></span>
+      </div>
+    </div>
+
+    <form id="limitsForm" method="POST" action="{% url 'deposit-limits-web' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Límite diario (S/.)</label>
+        <input type="number" name="daily_limit" class="form-input" id="daily_limit" min="0" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Límite semanal (S/.)</label>
+        <input type="number" name="weekly_limit" class="form-input" id="weekly_limit" min="0" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Límite mensual (S/.)</label>
+        <input type="number" name="monthly_limit" class="form-input" id="monthly_limit" min="0" step="0.01" required>
+      </div>
+
+      <div id="cooldown-info" style="display:none; background:rgba(240,180,41,.1); border:1px solid rgba(240,180,41,.3); border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px; color:var(--gold);">
+        ⏳ Cooldown activo. Podrás subir límites en: <strong id="cooldown-timer"></strong>
+      </div>
+
+      <div id="limits-error" style="color:var(--red); margin-bottom:12px; display:none;"></div>
+      <button type="submit" class="btn btn-gold" style="width:100%;">GUARDAR CAMBIOS</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Valores de referencia para el ancho de las barras
+const MAX_REF = { daily: 1000, weekly: 5000, monthly: 10000 };
+
+function actualizarBarras(data) {
+    const daily = parseFloat(data.daily_limit) || 0;
+    const weekly = parseFloat(data.weekly_limit) || 0;
+    const monthly = parseFloat(data.monthly_limit) || 0;
+
+    document.getElementById('daily-bar').style.width = Math.min(100, (daily / MAX_REF.daily) * 100) + '%';
+    document.getElementById('daily-label').textContent = daily.toFixed(2);
+    document.getElementById('weekly-bar').style.width = Math.min(100, (weekly / MAX_REF.weekly) * 100) + '%';
+    document.getElementById('weekly-label').textContent = weekly.toFixed(2);
+    document.getElementById('monthly-bar').style.width = Math.min(100, (monthly / MAX_REF.monthly) * 100) + '%';
+    document.getElementById('monthly-label').textContent = monthly.toFixed(2);
+}
+
+async function cargarLimites() {
+    const res = await apiFetch('/api/users/deposit-limits/');
+    const data = await res.json();
+    document.getElementById('daily_limit').value = data.daily_limit;
+    document.getElementById('weekly_limit').value = data.weekly_limit;
+    document.getElementById('monthly_limit').value = data.monthly_limit;
+    actualizarBarras(data);
+
+    if (data.cooldown_hasta) {
+        const cooldown = new Date(data.cooldown_hasta).getTime();
+        const ahora = new Date().getTime();
+        if (cooldown > ahora) {
+            document.getElementById('cooldown-info').style.display = 'block';
+            actualizarCooldown(cooldown);
+        }
+    }
+}
+
+function actualizarCooldown(fin) {
+    const intervalo = setInterval(() => {
+        const ahora = new Date().getTime();
+        const diff = fin - ahora;
+        if (diff <= 0) {
+            document.getElementById('cooldown-info').style.display = 'none';
+            clearInterval(intervalo);
+            return;
+        }
+        const horas = Math.floor(diff / (1000 * 60 * 60));
+        const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+        document.getElementById('cooldown-timer').textContent =
+            `${horas}h ${minutos}m ${segundos}s`;
+    }, 1000);
+}
+
+document.getElementById('limitsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const errorDiv = document.getElementById('limits-error');
+    errorDiv.style.display = 'none';
+
+    const res = await apiFetch('/api/users/deposit-limits/', {
+        method: 'PATCH',
+        body: JSON.stringify({
+            daily_limit: parseFloat(form.daily_limit.value),
+            weekly_limit: parseFloat(form.weekly_limit.value),
+            monthly_limit: parseFloat(form.monthly_limit.value),
+        })
+    });
+
+    if (res.ok) {
+        alert('Límites actualizados correctamente.');
+        cargarLimites();
+    } else {
+        const data = await res.json();
+        errorDiv.textContent = Object.values(data).flat().join('. ');
+        errorDiv.style.display = 'block';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', cargarLimites);
+</script>
+{% endblock %}

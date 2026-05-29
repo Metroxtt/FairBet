@@ -1,8 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.conf import settings
+
+# Redirige al inicio a la pagina de eventos
+@login_required
+def home_view(request):
+    return redirect('/events/')
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
 def login_view(request):
@@ -29,19 +33,19 @@ def register_view(request):
 # Vista del perfil del usuario autenticado
 @login_required
 def profile_view(request):
-    return render(request, 'users/profile.html')
+    return render(request, 'users/profile.html', {'page_title': 'Mi Perfil'})
 
 # Vista de verificacion KYC
 @login_required
 def kyc_view(request):
-    return render(request, 'users/kyc_verify.html')
+    return render(request, 'users/kyc_verify.html', {'page_title': 'Verificación KYC'})
 
 # Vista de limites de deposito
 @login_required
 def deposit_limits_view(request):
-    return render(request, 'users/deposit_limits.html')
+    return render(request, 'users/deposit_limits.html', {'page_title': 'Límites de Depósito'})
 
 # Vista de autoexclusion
 @login_required
 def self_exclude_view(request):
-    return render(request, 'users/self_exclude.html')
+    return render(request, 'users/self_exclude.html', {'page_title': 'Autoexclusión'})

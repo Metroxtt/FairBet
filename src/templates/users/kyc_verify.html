@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Verificación KYC{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;">
+
+  <div class="section-header">
+    <div class="section-title">VERIFICACIÓN <span>KYC</span></div>
+  </div>
+
+  <div class="card" style="padding:24px;">
+
+    {% if user.estado == 'verificado' %}
+      <div style="text-align:center; padding:20px 0;">
+        <div style="font-size:48px; margin-bottom:12px;">✅</div>
+        <div style="font-size:18px; font-weight:700; color:var(--green);">Ya estás verificado</div>
+        <p style="color:var(--muted); margin-top:8px;">Puedes apostar sin restricciones.</p>
+      </div>
+
+    {% elif user.estado == 'autoexcluido' or user.estado == 'bloqueado' %}
+      <div style="text-align:center; padding:20px 0;">
+        <div style="font-size:48px; margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px; font-weight:700; color:var(--red);">Cuenta {{ user.estado }}</div>
+        <p style="color:var(--muted); margin-top:8px;">No puedes verificar tu cuenta en este estado.</p>
+      </div>
+
+    {% else %}
+      <div style="text-align:center; margin-bottom:24px;">
+        <div style="font-size:40px; margin-bottom:12px;">🪪</div>
+        <p style="color:var(--muted);">Para apostar necesitas verificar tu identidad. Confirma que eres mayor de edad.</p>
+      </div>
+
+      <form id="kycForm" method="POST" action="{% url 'kyc' %}">
+        {% csrf_token %}
+        <div class="form-group" style="text-align:center;">
+          <label style="display:flex; align-items:center; gap:10px; justify-content:center; cursor:pointer;">
+            <input type="checkbox" name="confirmar" value="true" required>
+            <span>Confirmo que soy mayor de 18 años</span>
+          </label>
+        </div>
+        <div id="kyc-error" style="color:var(--red); margin-bottom:12px; display:none;"></div>
+        <button type="submit" class="btn btn-gold" style="width:100%;">VERIFICAR IDENTIDAD</button>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+document.getElementById('kycForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('kyc-error');
+    errorDiv.style.display = 'none';
+
+    const res = await apiFetch('/api/users/verify-kyc/', {
+        method: 'POST',
+        body: JSON.stringify({ confirmar: true })
+    });
+
+    if (res.ok) {
+        alert('Identidad verificada exitosamente. ¡Ya puedes apostar!');
+        window.location.reload();
+    } else {
+        const data = await res.json();
+        errorDiv.textContent = Object.values(data).flat().join('. ');
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

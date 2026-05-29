@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Crear Cuenta{% endblock %}
+
+{% block auth_content %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:40px 0;">
+  <div class="card" style="width:480px; padding:40px;">
+    <div class="logo-name" style="text-align:center; margin-bottom:32px;">BETZONE</div>
+    <p style="text-align:center; color:var(--muted); margin-bottom:24px;">Crea tu cuenta para empezar</p>
+
+    <form id="registerForm" method="POST" action="{% url 'register' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="apellido" class="form-input" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">DNI</label>
+          <input type="text" name="dni" class="form-input" maxlength="8" required>
+          <small style="color:var(--muted); font-size:11px;">8 dígitos</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono" class="form-input">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" name="email" class="form-input" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha de nacimiento</label>
+          <input type="date" name="fecha_nacimiento" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" name="password" class="form-input" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar contraseña</label>
+        <input type="password" name="confirmar_password" class="form-input" required>
+      </div>
+
+      <div id="register-error" style="color:var(--red); margin-bottom:12px; display:none;"></div>
+
+      <button type="submit" class="btn btn-gold" style="width:100%;">CREAR CUENTA</button>
+    </form>
+
+    <p style="text-align:center; margin-top:16px; color:var(--muted);">
+      ¿Ya tienes cuenta? <a href="{% url 'login' %}" style="color:var(--gold);">Inicia sesión</a>
+    </p>
+  </div>
+</div>
+
+<script>
+// Validar digito verificador del DNI peruano
+function validarDNI(dni) {
+    if (!/^\d{8}$/.test(dni)) return false;
+    const pesos = [3,2,7,6,5,4,3,2];
+    let suma = 0;
+    for (let i = 0; i < 8; i++) {
+        suma += parseInt(dni[i]) * pesos[i];
+    }
+    const resto = suma % 11;
+    const digito = 11 - resto;
+    return digito === 10 ? false : true;
+}
+
+// Calcular edad desde fecha de nacimiento
+function calcularEdad(fechaNac) {
+    const hoy = new Date();
+    const nac = new Date(fechaNac);
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const mes = hoy.getMonth() - nac.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) edad--;
+    return edad;
+}
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const errorDiv = document.getElementById('register-error');
+    errorDiv.style.display = 'none';
+
+    // Validar DNI
+    const dni = form.dni.value.trim();
+    if (!validarDNI(dni)) {
+        errorDiv.textContent = 'DNI inválido. Ingresa un DNI peruano válido de 8 dígitos.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Validar edad
+    const fechaNac = form.fecha_nacimiento.value;
+    if (calcularEdad(fechaNac) < 18) {
+        errorDiv.textContent = 'Debes ser mayor de 18 años para registrarte.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Validar contraseñas
+    if (form.password.value !== form.confirmar_password.value) {
+        errorDiv.textContent = 'Las contraseñas no coinciden.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const res = await fetch('/api/users/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            dni: dni,
+            email: form.email.value,
+            nombre: form.nombre.value,
+            apellido: form.apellido.value,
+            telefono: form.telefono.value,
+            fecha_nacimiento: fechaNac,
+            password: form.password.value,
+            confirmar_password: form.confirmar_password.value,
+        })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+        alert('Cuenta creada exitosamente. Tu cuenta está pendiente de verificación KYC.');
+        window.location.href = '/login/';
+    } else {
+        const errores = Object.values(data).flat().join('. ');
+        errorDiv.textContent = errores || 'Error al registrar. Intenta de nuevo.';
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

@@ -55,8 +55,11 @@ class Bet(models.Model):
 
             if ganadora:
                 ganancia = self.monto * self.cuota_al_apostar
-                transfer(pendientes_account, user_account, ganancia,
-                         f'Pago apuesta {self.pk}')
+                ganancia_neta = ganancia - self.monto
+                transfer(casa_account, user_account, ganancia_neta,
+                         f'Ganancia apuesta {self.pk}')
+                transfer(pendientes_account, user_account, self.monto,
+                         f'Devolucion stake apuesta {self.pk}')
                 self.estado = self.Estado.WON
             else:
                 transfer(pendientes_account, casa_account, self.monto,

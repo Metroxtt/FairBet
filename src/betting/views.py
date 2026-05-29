@@ -23,7 +23,7 @@ def place_bet(request):
 
     user = request.user
 
-    if user.is_excluded:
+    if user.esta_autoexcluido:
         return Response({'error': 'Usuario autoexcluido no puede apostar'},
                         status=status.HTTP_403_FORBIDDEN)
 

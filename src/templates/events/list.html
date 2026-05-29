@@ -25,19 +25,19 @@
       <div class="event-sport">Fútbol</div>
       <div class="event-teams">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</div>
       <div class="event-time">{{ event.fecha_hora|date:"d/m H:i" }}</div>
-      <div class="event-odds">
-        <!-- We will populate markets here dynamically or via template tags -->
+      <div class="event-odds" data-event-id="{{ event.id }}">
+        <!-- Llenado dinámico vía WebSockets -->
         <div class="odd-btn">
           <span class="odd-label">1</span>
-          <span class="odd-value">-</span>
+          <span class="odd-value" id="odd-local-{{ event.id }}">-</span>
         </div>
         <div class="odd-btn">
           <span class="odd-label">X</span>
-          <span class="odd-value">-</span>
+          <span class="odd-value" id="odd-empate-{{ event.id }}">-</span>
         </div>
         <div class="odd-btn">
           <span class="odd-label">2</span>
-          <span class="odd-value">-</span>
+          <span class="odd-value" id="odd-visitante-{{ event.id }}">-</span>
         </div>
       </div>
     </div>
@@ -46,4 +46,72 @@
   <p style="color: var(--muted); grid-column: span 3; text-align: center; padding: 40px;">No hay eventos disponibles.</p>
   {% endfor %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Obtenemos todos los eventos listados en la pantalla
+    const eventOddsContainers = document.querySelectorAll('.event-odds');
+    
+    eventOddsContainers.forEach(container => {
+        const eventId = container.getAttribute('data-event-id');
+        if (!eventId) return;
+
+        // Construir URL del WebSocket
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${protocol}${window.location.host}/ws/events/${eventId}/`;
+        
+        const socket = new WebSocket(wsUrl);
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            // Cuando recién conectamos, recibimos una "foto" inicial
+            if (data.type === 'odds_snapshot' && data.markets.length > 0) {
+                // Tomamos el primer mercado para este ejemplo simple (Match Winner)
+                const market = data.markets[0]; 
+                updateOdd(`odd-local-${eventId}`, market.cuota_local);
+                updateOdd(`odd-empate-${eventId}`, market.cuota_empate);
+                updateOdd(`odd-visitante-${eventId}`, market.cuota_visitante);
+            } 
+            // Cuando una cuota se actualiza desde el admin/backend
+            else if (data.type === 'odds_update') {
+                updateOdd(`odd-local-${eventId}`, data.data.cuota_local);
+                updateOdd(`odd-empate-${eventId}`, data.data.cuota_empate);
+                updateOdd(`odd-visitante-${eventId}`, data.data.cuota_visitante);
+            }
+        };
+
+        socket.onclose = function(e) {
+            console.error(`WebSocket para evento ${eventId} cerrado.`);
+        };
+    });
+
+    // Función auxiliar para actualizar el DOM con animación
+    function updateOdd(elementId, newValue) {
+        const el = document.getElementById(elementId);
+        if (el && newValue && newValue !== 'None') {
+            // Si el valor cambia, animamos
+            if (el.innerText !== newValue && el.innerText !== '-') {
+                el.classList.add('glow-update');
+                setTimeout(() => el.classList.remove('glow-update'), 1000);
+            }
+            el.innerText = newValue;
+        } else if (el) {
+            el.innerText = '-';
+        }
+    }
+});
+</script>
+<style>
+/* Clase para animar la cuota cuando se actualiza en tiempo real */
+.glow-update {
+    animation: flashGreen 1s ease-out;
+}
+@keyframes flashGreen {
+    0% { color: var(--gold, #00FF9D); text-shadow: 0 0 10px #00FF9D; transform: scale(1.1); }
+    100% { color: inherit; text-shadow: none; transform: scale(1); }
+}
+</style>
 {% endblock %}

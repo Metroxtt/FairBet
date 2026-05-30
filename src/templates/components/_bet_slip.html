@@ -1,64 +1,122 @@
-<!-- BET SLIP PANEL -->
-<div class="bet-slip-panel" id="betSlip">
-  <div class="bet-slip-header">
-    <div class="bet-slip-title">Ticket de Apuesta</div>
-    <button class="close-btn" onclick="closeBetSlip()">×</button>
+<!-- BETSLIP -->
+<div class="betslip">
+  <div class="bs-head">
+    <div class="bs-head-title">
+      <i class="ti ti-ticket" style="color:var(--neon)"></i> Boleta 
+      <span class="bs-badge" id="bs-count">0</span>
+    </div>
+    <span class="bs-clear" onclick="clearBetSlip()">Limpiar todo</span>
   </div>
-  <div class="bet-slip-content" id="betSlipContent">
-    <div class="bet-slip-empty" id="betSlipEmpty">
-      <div class="icon">🎟️</div>
-      Selecciona una cuota para añadirla a tu ticket
-    </div>
-    <div id="betSlipItems" style="display:none;">
-      <div class="slip-item">
-        <div class="slip-item-top">
-          <div class="slip-item-teams" id="slipEvent">Equipo A vs Equipo B</div>
-          <button class="slip-remove" onclick="clearBetSlip()">🗑️</button>
-        </div>
-        <div class="slip-item-pick" id="slipPick">1 - Equipo A</div>
-        <div class="slip-item-odd" id="slipOdd">2.10</div>
-        <div class="stake-row">
-          <input type="number" class="stake-input" id="stakeInput" placeholder="Monto S/" oninput="updatePotentialWin()">
-        </div>
+  
+  <!-- Empty State -->
+  <div id="betSlipEmpty" class="bs-empty">
+    <i class="ti ti-ticket-off"></i>
+    <p>Selecciona una cuota<br>para comenzar</p>
+  </div>
+  
+  <!-- Content State -->
+  <div id="betSlipItems" style="display:none;">
+    <div class="bs-pick">
+      <div class="bs-pick-info">
+        <div class="bs-pick-match" id="slipEvent">Equipo A vs Equipo B</div>
+        <div class="bs-pick-sel" id="slipPick">✓ Equipo A</div>
       </div>
+      <div class="bs-pick-odd" id="slipOdd">2.10×</div>
+      <div class="bs-pick-rm" onclick="clearBetSlip()"><i class="ti ti-x"></i></div>
+    </div>
+    
+    <div class="bs-footer">
+      <div class="bs-total-row">
+        <span class="bs-total-label">Cuota total</span>
+        <span class="bs-total-val" id="totalOdd">2.10×</span>
+      </div>
+      <div class="stake-row">
+        <label>Monto</label>
+        <input class="stake-inp" id="stakeInput" type="number" placeholder="0" min="5" oninput="updatePotentialWin()">
+      </div>
+      <div class="quick-stakes">
+        <div class="qs" onclick="setStake(20)">S/20</div>
+        <div class="qs" onclick="setStake(50)">S/50</div>
+        <div class="qs" onclick="setStake(100)">S/100</div>
+        <div class="qs" onclick="setStake(200)">S/200</div>
+      </div>
+      <div class="payout-box">
+        <div>
+          <div class="payout-lbl">GANANCIA POTENCIAL</div>
+          <div class="payout-val" id="potentialWin">S/ 0.00</div>
+        </div>
+        <i class="ti ti-trending-up" style="font-size:28px;color:var(--neon);opacity:.5"></i>
+      </div>
+      <button class="bet-now-btn" id="placeBetBtn" onclick="placeBet()" disabled>APOSTAR AHORA</button>
     </div>
   </div>
-  <div class="bet-slip-footer">
-    <div class="bet-summary">
-      <div class="bet-summary-row">
-        <span>Cuota Total:</span>
-        <span id="totalOdd">0.00</span>
-      </div>
-      <div class="bet-summary-row total">
-        <span>Pago Potencial:</span>
-        <span id="potentialWin">S/ 0.00</span>
-      </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="lb-card" style="margin-top:16px;">
+  <div class="sec-hdr" style="margin-bottom:12px">
+    <div class="sec-title" style="font-size:16px">Top Jugadores <span class="accent">/ Semana</span></div>
+  </div>
+  <div id="lb-body">
+    <!-- Static mock for Leaderboard -->
+    <div class="lb-row">
+      <div class="lb-pos g1">1</div>
+      <div class="lb-av" style="background:var(--neon)">CR</div>
+      <div class="lb-inf"><div class="lb-nm">Carlos R.</div><div class="lb-bets">48 apuestas</div></div>
+      <div class="lb-amt">S/ 3,200</div>
     </div>
-    <button class="btn btn-gold" style="width:100%; justify-content:center;" onclick="placeBet()" id="placeBetBtn" disabled>Realizar Apuesta</button>
+    <div class="lb-row">
+      <div class="lb-pos g2">2</div>
+      <div class="lb-av" style="background:var(--amber)">MT</div>
+      <div class="lb-inf"><div class="lb-nm">María T.</div><div class="lb-bets">32 apuestas</div></div>
+      <div class="lb-amt">S/ 1,800</div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-pos g3">3</div>
+      <div class="lb-av" style="background:#cd7f32">JP</div>
+      <div class="lb-inf"><div class="lb-nm">Juan P.</div><div class="lb-bets">27 apuestas</div></div>
+      <div class="lb-amt">S/ 1,250</div>
+    </div>
   </div>
 </div>
 
 <script>
-  function openBetSlip() {
-    document.getElementById('betSlip').classList.add('open');
+  function setStake(amount) {
+    document.getElementById('stakeInput').value = amount;
+    updatePotentialWin();
   }
-  function closeBetSlip() {
-    document.getElementById('betSlip').classList.remove('open');
-  }
-  // Mock logic to be integrated with API later
+
   function updatePotentialWin() {
-    const odd = parseFloat(document.getElementById('totalOdd').innerText) || 0;
+    const oddText = document.getElementById('totalOdd').innerText;
+    const odd = parseFloat(oddText.replace('×', '')) || 0;
     const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
     const potential = (odd * stake).toFixed(2);
     document.getElementById('potentialWin').innerText = `S/ ${potential}`;
-    document.getElementById('placeBetBtn').disabled = stake <= 0;
+    document.getElementById('placeBetBtn').disabled = stake < 5; // minimum bet
   }
+
   function clearBetSlip() {
     document.getElementById('betSlipItems').style.display = 'none';
     document.getElementById('betSlipEmpty').style.display = 'block';
-    document.getElementById('slipCount').innerText = '0';
-    document.getElementById('totalOdd').innerText = '0.00';
+    document.getElementById('bs-count').innerText = '0';
     document.getElementById('stakeInput').value = '';
+    updatePotentialWin();
+  }
+
+  // Temporary function to mock adding to slip for UI testing
+  function addToSlip(label, eventId) {
+    document.getElementById('betSlipEmpty').style.display = 'none';
+    document.getElementById('betSlipItems').style.display = 'block';
+    document.getElementById('bs-count').innerText = '1';
+    
+    // Fallback if websocket hasn't loaded values
+    let oddValueText = document.getElementById(`odd-${label}-${eventId}`)?.innerText || '2.10';
+    if(oddValueText === '-') oddValueText = '2.10';
+    
+    document.getElementById('slipOdd').innerText = oddValueText + '×';
+    document.getElementById('totalOdd').innerText = oddValueText + '×';
+    document.getElementById('slipPick').innerText = '✓ ' + label.toUpperCase();
+    
     updatePotentialWin();
   }
 </script>

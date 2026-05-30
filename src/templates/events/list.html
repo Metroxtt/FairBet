@@ -14,31 +14,36 @@
 
 <div class="events-grid" id="eventsGrid">
   {% for event in events %}
-  <div class="event-card" onclick="openEventDetails({{ event.id }})">
-    <div class="event-banner football">
-      {% if event.estado == 'live' %}
-      <div class="event-live-badge">LIVE</div>
-      {% endif %}
-      <!-- Sport Icon based on sport type later -->
+  <div class="ev" id="ev-{{ event.id }}">
+    <div class="ev-top">
+      <div class="ev-sport-badge">
+        <span class="dot" style="background:#22C55E"></span>
+        Fútbol
+      </div>
+      <div class="ev-meta">
+        {% if event.estado == 'live' %}
+        <span class="ev-live">LIVE</span>
+        {% endif %}
+        <span class="ev-time"><i class="ti ti-clock" style="font-size:11px"></i> {{ event.fecha_hora|date:"d/m H:i" }}</span>
+      </div>
     </div>
-    <div class="event-body">
-      <div class="event-sport">Fútbol</div>
-      <div class="event-teams">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</div>
-      <div class="event-time">{{ event.fecha_hora|date:"d/m H:i" }}</div>
-      <div class="event-odds" data-event-id="{{ event.id }}">
-        <!-- Llenado dinámico vía WebSockets -->
-        <div class="odd-btn">
-          <span class="odd-label">1</span>
-          <span class="odd-value" id="odd-local-{{ event.id }}">-</span>
-        </div>
-        <div class="odd-btn">
-          <span class="odd-label">X</span>
-          <span class="odd-value" id="odd-empate-{{ event.id }}">-</span>
-        </div>
-        <div class="odd-btn">
-          <span class="odd-label">2</span>
-          <span class="odd-value" id="odd-visitante-{{ event.id }}">-</span>
-        </div>
+    <div class="ev-matchup">
+      <div class="ev-team">{{ event.equipo_local }}</div>
+      <div class="ev-vs">VS</div>
+      <div class="ev-team right">{{ event.equipo_visitante }}</div>
+    </div>
+    <div class="odds-strip three event-odds" data-event-id="{{ event.id }}">
+      <div class="odd-box" onclick="addToSlip('local', {{ event.id }})">
+        <span class="odd-lbl">1</span>
+        <span class="odd-num" id="odd-local-{{ event.id }}">-</span>
+      </div>
+      <div class="odd-box" onclick="addToSlip('empate', {{ event.id }})">
+        <span class="odd-lbl">X</span>
+        <span class="odd-num" id="odd-empate-{{ event.id }}">-</span>
+      </div>
+      <div class="odd-box" onclick="addToSlip('visitante', {{ event.id }})">
+        <span class="odd-lbl">2</span>
+        <span class="odd-num" id="odd-visitante-{{ event.id }}">-</span>
       </div>
     </div>
   </div>
@@ -110,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     animation: flashGreen 1s ease-out;
 }
 @keyframes flashGreen {
-    0% { color: var(--gold, #00FF9D); text-shadow: 0 0 10px #00FF9D; transform: scale(1.1); }
+    0% { color: var(--neon, #00FF87); text-shadow: 0 0 10px var(--neon, #00FF87); transform: scale(1.1); }
     100% { color: inherit; text-shadow: none; transform: scale(1); }
 }
 </style>

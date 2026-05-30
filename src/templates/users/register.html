@@ -22,8 +22,8 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">DNI</label>
-          <input type="text" name="dni" class="form-input" maxlength="8" required>
-          <small style="color:var(--muted); font-size:11px;">8 dígitos</small>
+          <input type="text" name="dni" class="form-input" maxlength="9" required>
+          <small style="color:var(--muted); font-size:11px;">9 dígitos mas su codigo de verificacion</small>
         </div>
         <div class="form-group">
           <label class="form-label">Teléfono</label>
@@ -63,7 +63,7 @@
 <script>
 // Validar digito verificador del DNI peruano
 function validarDNI(dni) {
-    if (!/^\d{8}$/.test(dni)) return false;
+    if (!/^\d{9}$/.test(dni)) return false;
     const pesos = [3,2,7,6,5,4,3,2];
     let suma = 0;
     for (let i = 0; i < 8; i++) {
@@ -93,7 +93,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     // Validar DNI
     const dni = form.dni.value.trim();
     if (!validarDNI(dni)) {
-        errorDiv.textContent = 'DNI inválido. Ingresa un DNI peruano válido de 8 dígitos.';
+        errorDiv.textContent = 'DNI inválido. Ingresa un DNI peruano válido de 8 dígitos mas su codigo de verificacion.';
         errorDiv.style.display = 'block';
         return;
     }

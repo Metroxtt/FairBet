@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}FairBet{% endblock %} — Plataforma Educativa</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <title>{% block title %}FairBet{% endblock %} — Casa de Apuestas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/fairbet.css' %}">
   {% block extra_css %}{% endblock %}
@@ -12,14 +13,13 @@
 <body>
 
   {% if user.is_authenticated %}
-    {% include 'components/_sidebar.html' %}
-    <div class="main">
-      {% include 'components/_topbar.html' %}
-      <div class="content">
-
+    {% include 'components/_topbar.html' %}
+    
+    <div class="body-wrap">
+      <div class="main-col">
         {% if messages %}
           {% for message in messages %}
-            <div class="alert-banner alert-{{ message.tags }}">
+            <div style="background:var(--surface2); border:1px solid var(--border); padding:12px; margin-bottom:16px; border-radius:8px;">
               {{ message }}
             </div>
           {% endfor %}
@@ -27,20 +27,19 @@
 
         {% block content %}{% endblock %}
       </div>
+      
+      <div class="side-col">
+        {% include 'components/_bet_slip.html' %}
+      </div>
     </div>
-
-    {% include 'components/_bet_slip.html' %}
-
-    <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-left:230px;">
-      Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
-    </footer>
-
+    
   {% else %}
-    {% block auth_content %}{% endblock %}
-
-    <footer style="text-align:center; padding:12px; color:var(--muted); font-size:11px; border-top:1px solid var(--border);">
-      Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
-    </footer>
+    <div class="body-wrap" style="display:block; min-height:100vh; padding:40px;">
+      {% block auth_content %}{% endblock %}
+      <footer style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+        Plataforma educativa con moneda virtual. No constituye una casa de apuestas.
+      </footer>
+    </div>
   {% endif %}
 
   <script src="{% static 'js/auth.js' %}"></script>

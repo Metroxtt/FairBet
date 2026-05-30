@@ -57,37 +57,37 @@
         <div class="odds-strip three event-odds" data-market-id="{{ market.id }}">
           <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, '1')">
             <span class="odd-lbl">1</span>
-            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
           </div>
           <div class="odd-box" onclick="addToSlip('empate', {{ event.id }}, {{ market.id }}, 'X')">
             <span class="odd-lbl">X</span>
-            <span class="odd-num" id="odd-{{ market.id }}-empate">{{ market.cuota_empate|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-empate">{{ market.cuota_empate|stringformat:".2f" }}</span>
           </div>
           <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, '2')">
             <span class="odd-lbl">2</span>
-            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
           </div>
         </div>
         {% elif market.tipo == 'over_under' %}
         <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
           <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Over 2.5')">
             <span class="odd-lbl">Over 2.5</span>
-            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
           </div>
           <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Under 2.5')">
             <span class="odd-lbl">Under 2.5</span>
-            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
           </div>
         </div>
         {% elif market.tipo == 'btts' %}
         <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
           <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Ambos Sí')">
             <span class="odd-lbl">Ambos Sí</span>
-            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
           </div>
           <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Ambos No')">
             <span class="odd-lbl">Ambos No</span>
-            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|floatformat:2 }}</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
           </div>
         </div>
         {% endif %}

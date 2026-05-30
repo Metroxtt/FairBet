@@ -2,66 +2,71 @@
 {% block title %}Mi Billetera{% endblock %}
 
 {% block content %}
-<div class="wallet-hero">
-  <div class="wallet-balance-label">SALDO DISPONIBLE</div>
-  <div class="wallet-balance">
-    <!-- It will be populated dynamically via context -->
-    {{ account.balance|default:"0.0000" }}
+<div class="sec-hdr">
+  <div class="sec-title">Billetera</div>
+</div>
+
+<div class="wallet-grid">
+  <div class="w-card main">
+    <div class="w-lbl">Saldo disponible</div>
+    <div class="w-val">S/ {{ account.balance|default:"0.00" }}</div>
   </div>
-  <div class="wallet-currency">Fichas Virtuales (S/)</div>
-  <div class="wallet-actions">
-    <button class="btn btn-green" onclick="openModal('depositModal')">Recargar Fichas</button>
-    <button class="btn btn-outline" style="color:var(--text);border-color:var(--border);" onclick="openModal('withdrawModal')">Retirar</button>
+  <div class="w-card">
+    <div class="w-lbl">Límite Diario Restante</div>
+    <div class="w-subval" style="color:var(--text)">--</div>
+  </div>
+  <div class="w-card">
+    <div class="w-lbl">Límite Mensual Restante</div>
+    <div class="w-subval" style="color:var(--neon)">--</div>
   </div>
 </div>
 
-<div class="section-header">
-  <div class="section-title">Historial de <span>Transacciones</span></div>
+<div class="dep-section" style="margin-bottom: 24px;">
+  <div class="dep-title"><i class="ti ti-plus-circle" style="color:var(--neon)"></i> Depositar fondos</div>
+  <form id="depositForm" method="POST" action="{% url 'wallet-deposit' %}" style="margin:0;">
+    {% csrf_token %}
+    <div class="dep-presets">
+      <button type="button" class="dep-btn" onclick="setDep(50)">S/ 50</button>
+      <button type="button" class="dep-btn" onclick="setDep(100)">S/ 100</button>
+      <button type="button" class="dep-btn" onclick="setDep(200)">S/ 200</button>
+      <button type="button" class="dep-btn" onclick="setDep(500)">S/ 500</button>
+    </div>
+    <input class="dep-inp" type="number" step="0.01" name="amount" id="dep-inp" placeholder="Monto personalizado (S/)" required>
+    <button type="submit" class="dep-submit">DEPOSITAR AHORA</button>
+  </form>
 </div>
-<div class="card">
-  <!-- We will loop over transactions here -->
+
+<div class="sec-hdr">
+  <div class="sec-title">Historial de <span class="accent" style="margin-left: 6px;"> Transacciones</span></div>
+</div>
+<div class="hist-list">
   {% for entry in transactions %}
-  <div class="tx-item">
-    <div class="tx-icon {% if entry.credit > 0 %}dep{% else %}wit{% endif %}">
-      {% if entry.credit > 0 %}⬇️{% else %}⬆️{% endif %}
-    </div>
-    <div class="tx-info">
-      <div class="tx-title">{{ entry.description }}</div>
-      <div class="tx-sub">Transacción completada</div>
-    </div>
+  <div class="hist-card">
+    <div class="hist-indicator {% if entry.credit > 0 %}won{% else %}lost{% endif %}"></div>
     <div>
-      <div class="tx-amount {% if entry.credit > 0 %}pos{% else %}neg{% endif %}">
-        {% if entry.credit > 0 %}+{{ entry.credit }}{% else %}-{{ entry.debit }}{% endif %}
+      <div class="hist-match">{{ entry.description }}</div>
+      <div class="hist-detail">{{ entry.created_at|date:"d M Y, H:i" }}</div>
+    </div>
+    <div class="hist-result">
+      <div class="hist-amount {% if entry.credit > 0 %}won{% else %}lost{% endif %}">
+        {% if entry.credit > 0 %}+S/ {{ entry.credit }}{% else %}-S/ {{ entry.debit }}{% endif %}
       </div>
-      <div class="tx-date">{{ entry.created_at|date:"d M, H:i" }}</div>
+      <div class="hist-state">Completado</div>
     </div>
   </div>
   {% empty %}
-  <p style="text-align:center; padding: 20px; color:var(--muted);">No hay transacciones aún.</p>
+  <div class="hist-card" style="justify-content:center;">
+    <span style="color:var(--muted2); font-size:13px;">No hay transacciones aún.</span>
+  </div>
   {% endfor %}
 </div>
 
-<!-- Modal Recarga -->
-<div class="modal-overlay" id="depositModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Recargar Fichas</div>
-      <button class="close-btn" onclick="closeModal('depositModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="depositForm" method="POST" action="{% url 'wallet-deposit' %}">
-        {% csrf_token %}
-        <div class="form-group">
-          <label class="form-label">Monto (S/)</label>
-          <input type="number" step="0.01" name="amount" class="form-input" placeholder="Ej. 100.00" required>
-        </div>
-        <p style="font-size:11px; color:var(--muted);">* Esta es una simulación. No se procesarán pagos reales.</p>
-        <div class="modal-footer" style="padding:0; margin-top:20px; border:none;">
-          <button type="button" class="btn btn-outline" onclick="closeModal('depositModal')">Cancelar</button>
-          <button type="submit" class="btn btn-green">Confirmar Recarga</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function setDep(val) {
+    document.getElementById('dep-inp').value = val;
+  }
+</script>
 {% endblock %}

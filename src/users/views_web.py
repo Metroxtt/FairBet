@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from users.models import User
+
 
 # Vista del Dashboard Principal
 @login_required
@@ -87,6 +89,9 @@ def operator_dashboard_view(request):
     
     alertas = SuspiciousActivity.objects.filter(resuelto=False).order_by('-fecha')[:10]
     
+    usuarios = User.objects.all().order_by('-date_joined')[:50]
+
+    
     return render(request, 'users/admin_dashboard.html', {
         'page_title': 'Dashboard del Operador',
         'ggr': ggr,
@@ -95,6 +100,7 @@ def operator_dashboard_view(request):
         'usuarios_activos': usuarios_activos,
         'exposure_total': exposure_total,
         'alertas': alertas,
+        'usuarios': usuarios,
     })
 
 import csv

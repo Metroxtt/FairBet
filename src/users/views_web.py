@@ -148,7 +148,7 @@ def operator_dashboard_view(request):
         fecha_hora__lte=timezone.now()
     ).update(estado=Event.Estado.LIVE)
 
-    active_events = Event.objects.exclude(estado__in=[Event.Estado.FINISHED, Event.Estado.CANCELLED]).prefetch_related('markets')
+    active_events = Event.objects.all().prefetch_related('markets').order_by('-updated_at')
 
     # Calcular GGR diario para los últimos 7 días
     ggr_labels = []
@@ -265,6 +265,8 @@ def add_event_view(request):
                 fecha_hora = parse_datetime(request.POST.get('fecha_hora'))
                 if not fecha_hora:
                     raise ValueError("Fecha inválida")
+                if timezone.is_naive(fecha_hora):
+                    fecha_hora = timezone.make_aware(fecha_hora)
                 if fecha_hora < timezone.now():
                     raise ValueError("La fecha programada no puede estar en el pasado.")
                 estado_evento = Event.Estado.SCHEDULED
@@ -329,9 +331,12 @@ def edit_event_view(request, event_id):
                 fecha_hora_str = request.POST.get('fecha_hora')
                 if fecha_hora_str:
                     nueva_fecha = parse_datetime(fecha_hora_str)
-                    if nueva_fecha < timezone.now():
-                        raise ValueError("La fecha no puede estar en el pasado.")
-                    event.fecha_hora = nueva_fecha
+                    if nueva_fecha:
+                        if timezone.is_naive(nueva_fecha):
+                            nueva_fecha = timezone.make_aware(nueva_fecha)
+                        if nueva_fecha < timezone.now():
+                            raise ValueError("La fecha no puede estar en el pasado.")
+                        event.fecha_hora = nueva_fecha
                     event.estado = Event.Estado.SCHEDULED
             event.save()
             

@@ -127,7 +127,7 @@
           </thead>
           <tbody>
             {% for event in active_events %}
-            <tr>
+            <tr style="{% if event.estado == 'finalizado' or event.estado == 'cancelado' %}opacity:0.6;{% endif %}">
               <td style="font-weight:600">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</td>
               <td style="color:var(--muted2)">{{ event.fecha_hora|date:"d/m H:i" }}</td>
               <td>
@@ -135,31 +135,49 @@
                   <span class="op-badge green">EN VIVO</span>
                 {% elif event.estado == 'suspendido' %}
                   <span class="op-badge red">Suspendido</span>
+                {% elif event.estado == 'finalizado' %}
+                  <span class="op-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)">Finalizado</span>
+                {% elif event.estado == 'cancelado' %}
+                  <span class="op-badge red">Cancelado</span>
                 {% else %}
                   <span class="op-badge amber">{{ event.get_estado_display }}</span>
                 {% endif %}
               </td>
               <td>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  {% if event.estado == 'suspendido' %}
-                  <button onclick="adminToggleSuspender({{ event.id }},'unsuspend')" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto">Habilitar</button>
+                  {% if event.estado == 'finalizado' or event.estado == 'cancelado' %}
+                    <button onclick="adminEliminarEvento({{ event.id }})" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Eliminar</button>
                   {% else %}
-                  <button onclick="adminToggleSuspender({{ event.id }},'suspend')" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Suspender</button>
+                    {% if event.estado == 'suspendido' %}
+                    <button onclick="adminToggleSuspender({{ event.id }},'unsuspend')" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto">Habilitar</button>
+                    {% else %}
+                    <button onclick="adminToggleSuspender({{ event.id }},'suspend')" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Suspender</button>
+                    {% endif %}
+                    <a href="{% url 'operator-edit-event' event.id %}" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto;text-decoration:none;display:inline-flex;align-items:center;">Editar</a>
+                    <button onclick="adminEliminarEvento({{ event.id }})" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Eliminar</button>
                   {% endif %}
-                  <a href="{% url 'operator-edit-event' event.id %}" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto;text-decoration:none;display:inline-flex;align-items:center;">Editar</a>
-                  <button onclick="adminEliminarEvento({{ event.id }})" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Eliminar</button>
                 </div>
               </td>
               <td>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <select id="res-{{ event.id }}" style="padding:5px 8px;font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;outline:none">
-                    <option value="local">Local (L)</option>
-                    <option value="empate">Empate (E)</option>
-                    <option value="visita">Visitante (V)</option>
-                    <option value="cancelado">Cancelar</option>
-                  </select>
-                  <button onclick="adminLiquidarEvento({{ event.id }})" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Liquidar</button>
-                </div>
+                {% if event.estado == 'finalizado' %}
+                  <span style="color:var(--neon);font-weight:700;font-size:12px;">
+                    <i class="ti ti-trophy"></i> Ganó: {{ event.get_resultado_display|upper }}
+                  </span>
+                {% elif event.estado == 'cancelado' %}
+                  <span style="color:var(--red);font-weight:700;font-size:12px;">
+                    <i class="ti ti-x"></i> CANCELADO
+                  </span>
+                {% else %}
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <select id="res-{{ event.id }}" style="padding:5px 8px;font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;outline:none">
+                      <option value="local">Local (L)</option>
+                      <option value="empate">Empate (E)</option>
+                      <option value="visita">Visitante (V)</option>
+                      <option value="cancelado">Cancelar</option>
+                    </select>
+                    <button onclick="adminLiquidarEvento({{ event.id }})" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Liquidar</button>
+                  </div>
+                {% endif %}
               </td>
             </tr>
             {% empty %}

@@ -14,7 +14,11 @@ def home_view(request):
     from django.db.models import Sum
     from django.utils import timezone
     
-    featured_events = Event.objects.exclude(estado='finished').prefetch_related('markets').order_by('fecha_hora')[:4]
+    categoria = request.GET.get('categoria')
+    featured_query = Event.objects.exclude(estado='finished').prefetch_related('markets').order_by('fecha_hora')
+    if categoria:
+        featured_query = featured_query.filter(categoria=categoria)
+    featured_events = featured_query[:4]
     
     account = Account.objects.filter(user=request.user, account_type=Account.Tipo.WALLET_USUARIO).first()
     active_bets = Bet.objects.filter(user=request.user, estado=Bet.Estado.PENDING).count()
@@ -23,9 +27,11 @@ def home_view(request):
     return render(request, 'home.html', {
         'page_title': 'Dashboard',
         'featured_events': featured_events,
+        'current_categoria': categoria,
         'account': account,
         'active_bets': active_bets,
-        'wagered_today': wagered_today
+        'wagered_today': wagered_today,
+        'show_sport_bar': True
     })
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
@@ -149,9 +155,14 @@ def operator_dashboard_view(request):
         ggr_dia = apostado_dia - pagado_dia
         ggr_values.append(float(ggr_dia))
     
+    from wallet.models import Account
+    casa_account, _ = Account.objects.get_or_create(account_type=Account.Tipo.CASA)
+    saldo_casa = casa_account.balance
+
     return render(request, 'users/admin_dashboard.html', {
         'page_title': 'Dashboard del Operador',
         'ggr': ggr,
+        'saldo_casa': saldo_casa,
         'total_apostado_liquidado': total_apostado_liquidado,
         'ganancias_pagadas': ganancias_pagadas,
         'usuarios_activos': usuarios_activos,
@@ -174,10 +185,13 @@ def export_mincetur_csv(request):
     from betting.models import Bet
     import datetime
     
-    response = HttpResponse(content_type='text/csv')
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
     response['Content-Disposition'] = f'attachment; filename="reporte_mincetur_{datetime.date.today()}.csv"'
     
-    writer = csv.writer(response)
+    # Add BOM for Excel UTF-8 compatibility
+    response.write('\ufeff')
+    
+    writer = csv.writer(response, delimiter=';')
     writer.writerow(['ID Transaccion', 'DNI Usuario', 'Fecha', 'Evento', 'Mercado', 'Seleccion', 'Monto Apostado (PEN)', 'Cuota', 'Estado', 'Pago (PEN)'])
     
     apuestas = Bet.objects.all().select_related('user', 'event', 'market').order_by('-created_at')
@@ -191,10 +205,56 @@ def export_mincetur_csv(request):
             bet.market.tipo,
             bet.seleccion,
             f"{bet.monto:.2f}",
-            f"{bet.cuota_actual:.2f}",
+            f"{bet.cuota_al_apostar:.2f}",
             bet.estado,
             f"{bet.pago_potencial:.2f}" if bet.estado == Bet.Estado.WON else "0.00"
         ])
         
     return response
 
+@login_required
+def add_event_view(request):
+    if not request.user.is_staff:
+        return redirect('home')
+        
+    if request.method == 'POST':
+        from events.models import Event, Market
+        from decimal import Decimal
+        from django.utils.dateparse import parse_datetime
+        from django.contrib import messages
+        
+        try:
+            categoria = request.POST.get('categoria')
+            equipo_local = request.POST.get('equipo_local')
+            equipo_visitante = request.POST.get('equipo_visitante')
+            fecha_hora = parse_datetime(request.POST.get('fecha_hora'))
+            cuota_local = Decimal(request.POST.get('cuota_local'))
+            cuota_empate = Decimal(request.POST.get('cuota_empate'))
+            cuota_visitante = Decimal(request.POST.get('cuota_visitante'))
+            
+            # Create Event
+            event = Event.objects.create(
+                categoria=categoria,
+                equipo_local=equipo_local,
+                equipo_visitante=equipo_visitante,
+                fecha_hora=fecha_hora,
+                estado=Event.Estado.SCHEDULED
+            )
+            
+            # Create Default 1X2 Market
+            Market.objects.create(
+                event=event,
+                tipo=Market.Tipo.ONE_X_TWO,
+                cuota_local=cuota_local,
+                cuota_empate=cuota_empate,
+                cuota_visitante=cuota_visitante,
+                estado=Market.Estado.OPEN
+            )
+            
+            messages.success(request, 'Evento creado exitosamente.')
+            return redirect('operator-dashboard')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear el evento: {str(e)}')
+            
+    return render(request, 'users/admin_add_event.html', {'page_title': 'Nuevo Evento'})

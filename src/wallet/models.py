@@ -62,7 +62,9 @@ class LedgerEntry(models.Model):
 
     def generate_hash(self):
         prev = self.previous_hash or ('0' * 64)
-        data = f"{prev}{self.id}{self.account_id}{self.debit}{self.credit}{self.description}"
+        d_str = f"{self.debit:.4f}"
+        c_str = f"{self.credit:.4f}"
+        data = f"{prev}{self.id}{self.account_id}{d_str}{c_str}{self.description}"
         return hashlib.sha256(data.encode('utf-8')).hexdigest()
 
     def save(self, *args, **kwargs):

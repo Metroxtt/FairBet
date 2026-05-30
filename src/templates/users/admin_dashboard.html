@@ -2,200 +2,257 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
+<style>
+  /* ── Operator Dashboard Layout (scoped) ── */
+  .op-dash{display:flex;flex-direction:column;gap:14px}
+  .op-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .op-kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+  .op-kpi::after{content:'';position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;opacity:.06;pointer-events:none}
+  .op-kpi.green::after{background:var(--neon)}.op-kpi.red::after{background:var(--red)}.op-kpi.amber::after{background:var(--amber)}.op-kpi.blue::after{background:var(--blue)}
+  .op-kpi-lbl{font-size:10px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+  .op-kpi-val{font-family:var(--font-disp);font-size:28px;font-weight:700;line-height:1}
+  .op-kpi-sub{font-size:11px;color:var(--muted2);margin-top:6px}
+  .op-row{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+  .op-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+  .op-panel.full{grid-column:1/-1}
+  .op-h{font-family:var(--font-disp);font-size:16px;font-weight:700;letter-spacing:.3px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .op-h i{color:var(--neon);font-size:18px}
+  .op-h .red{color:var(--red)}
+  .op-tbl{width:100%;text-align:left;border-collapse:collapse;font-size:13px}
+  .op-tbl thead tr{border-bottom:1px solid var(--border)}
+  .op-tbl th{padding:10px 12px;font-size:10px;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+  .op-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.03)}
+  .op-tbl tr:hover td{background:rgba(255,255,255,.02)}
+  .op-actions{display:flex;flex-direction:column;gap:10px}
+  .op-action-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:8px;font-family:var(--font-disp);font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;border:none;transition:.2s;text-decoration:none;width:100%}
+  .op-action-btn:hover{transform:translateY(-1px)}
+  .op-action-btn.neon-o{background:transparent;border:1px solid var(--neon-border);color:var(--neon)}
+  .op-action-btn.neon-o:hover{background:var(--neon-dim)}
+  .op-action-btn.blue-o{background:transparent;border:1px solid rgba(33,150,243,.3);color:var(--blue)}
+  .op-action-btn.blue-o:hover{background:rgba(33,150,243,.08)}
+  .op-action-btn.red-o{background:transparent;border:1px solid rgba(255,59,92,.3);color:var(--red)}
+  .op-action-btn.red-o:hover{background:rgba(255,59,92,.08)}
+  .op-metric{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .op-metric:last-child{border:none}
+  .op-metric span{font-size:12px;color:var(--muted2)}
+  .op-metric strong{font-family:var(--font-disp);font-size:15px;font-weight:700}
+  .op-badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.5px}
+  .op-badge.green{background:rgba(0,255,135,.12);color:var(--neon)}
+  .op-badge.amber{background:rgba(255,170,0,.12);color:var(--amber)}
+  .op-badge.red{background:rgba(255,59,92,.12);color:var(--red)}
+  #ledger-res{margin-top:12px;font-size:12px;white-space:pre-wrap;display:none;padding:10px;border-radius:6px;max-height:160px;overflow-y:auto}
+</style>
+
 <div class="sec-hdr">
-  <div class="sec-title">{{ page_title }}</div>
+  <div class="sec-title"><i class="ti ti-shield" style="color:var(--neon)"></i> {{ page_title }}</div>
 </div>
 
-<div class="config-grid">
-  <div class="cfg-card">
-    <div class="cfg-title">GGR (Gross Gaming Revenue)</div>
-    <div style="font-family: var(--font-disp); font-size: 32px; font-weight: 700; color: var(--neon);">
-      S/. {{ ggr|floatformat:2 }}
-    </div>
-    <p style="color: var(--muted2); font-size: 13px; margin-top: 8px;">
-      Ingresos brutos de la casa. (Apostado - Pagado)
-    </p>
-  </div>
+<div class="op-dash">
 
-  <div class="cfg-card">
-    <div class="cfg-title">Métricas de Volumen</div>
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--muted2);">Total Apostado (Resuelto):</span>
-        <strong style="color: var(--text);">S/. {{ total_apostado_liquidado|floatformat:2 }}</strong>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--muted2);">Ganancias Pagadas:</span>
-        <strong style="color: var(--red);">S/. {{ ganancias_pagadas|floatformat:2 }}</strong>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--muted2);">Usuarios Activos (24h):</span>
-        <strong style="color: var(--text);">{{ usuarios_activos }}</strong>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--muted2);">Exposure Actual (Riesgo):</span>
-        <strong style="color: var(--amber);">S/. {{ exposure_total|floatformat:2 }}</strong>
-      </div>
+  <!-- ═══ ROW 1: KPIs ═══ -->
+  <div class="op-kpis">
+    <div class="op-kpi green">
+      <div class="op-kpi-lbl">GGR (Ingresos Brutos)</div>
+      <div class="op-kpi-val" style="color:var(--neon)">S/. {{ ggr|floatformat:2 }}</div>
+      <div class="op-kpi-sub">Apostado − Pagado</div>
     </div>
-  </div>
-  
-  <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title">GGR Últimos 7 Días</div>
-    <div style="height: 250px; position: relative; margin-top: 16px;">
-      <canvas id="ggrChart"></canvas>
+    <div class="op-kpi {% if saldo_casa < 0 %}red{% else %}green{% endif %}">
+      <div class="op-kpi-lbl">Saldo de la Casa</div>
+      <div class="op-kpi-val" style="color:{% if saldo_casa < 0 %}var(--red){% else %}var(--neon){% endif %}">S/. {{ saldo_casa|floatformat:2 }}</div>
+      <div class="op-kpi-sub">Fondos disponibles</div>
+    </div>
+    <div class="op-kpi amber">
+      <div class="op-kpi-lbl">Exposure (Riesgo)</div>
+      <div class="op-kpi-val" style="color:var(--amber)">S/. {{ exposure_total|floatformat:2 }}</div>
+      <div class="op-kpi-sub">Si todas las apuestas ganan</div>
+    </div>
+    <div class="op-kpi blue">
+      <div class="op-kpi-lbl">Usuarios Activos (24h)</div>
+      <div class="op-kpi-val" style="color:var(--blue)">{{ usuarios_activos }}</div>
+      <div class="op-kpi-sub">Con login reciente</div>
     </div>
   </div>
 
-  <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title">Reporte MINCETUR</div>
-    <p style="color: var(--muted2); font-size: 13px; margin-bottom: 16px;">
-      Descargar el historial mensual exportable en formato CSV con columnas normativas.
-    </p>
-    <a href="{% url 'export-mincetur-csv' %}" class="btn" style="width: 100%; justify-content: center; background: var(--surface3); border: 1px solid var(--blue); text-decoration: none; display: flex; align-items: center; gap: 8px;">
-      <i class="ti ti-download"></i> Descargar Reporte CSV
-    </a>
-  </div>
-  
-  <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title" style="color: var(--red);">Alertas Anti-fraude (SuspiciousActivity)</div>
-    <div style="margin-top: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
-        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
-          <th style="padding: 12px;">Fecha</th>
-          <th style="padding: 12px;">Usuario</th>
-          <th style="padding: 12px;">Motivo</th>
-          <th style="padding: 12px;">Severidad</th>
-        </tr>
-        {% for alerta in alertas %}
-        <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 12px; color: var(--muted2);">{{ alerta.fecha|date:"d/m H:i" }}</td>
-          <td style="padding: 12px;">{{ alerta.user.dni }}</td>
-          <td style="padding: 12px;">{{ alerta.motivo }}</td>
-          <td style="padding: 12px; color: {% if alerta.severidad == 'alta' %}var(--red){% else %}var(--amber){% endif %};">{{ alerta.get_severidad_display }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" style="padding: 24px; text-align: center; color: var(--muted2);">No hay alertas pendientes de revisión.</td>
-        </tr>
-        {% endfor %}
-      </table>
+  <!-- ═══ ROW 2: Chart + Sidebar ═══ -->
+  <div class="op-row">
+    <div class="op-panel">
+      <div class="op-h"><i class="ti ti-chart-line"></i> GGR Últimos 7 Días</div>
+      <div style="height:220px;position:relative">
+        <canvas id="ggrChart"></canvas>
+      </div>
+    </div>
+    <div class="op-panel" style="display:flex;flex-direction:column">
+      <div class="op-h"><i class="ti ti-report-analytics"></i> Resumen Financiero</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <div class="op-metric">
+          <span>Total Apostado:</span>
+          <strong style="color:var(--text)">S/. {{ total_apostado_liquidado|floatformat:2 }}</strong>
+        </div>
+        <div class="op-metric">
+          <span>Ganancias Pagadas:</span>
+          <strong style="color:var(--red)">S/. {{ ganancias_pagadas|floatformat:2 }}</strong>
+        </div>
+      </div>
+      <div class="op-actions" style="margin-top:auto;padding-top:12px;border-top:1px solid var(--border)">
+        <a href="{% url 'export-mincetur-csv' %}" class="op-action-btn blue-o">
+          <i class="ti ti-download"></i> Reporte MINCETUR (CSV)
+        </a>
+        <button onclick="verificarLedger()" class="op-action-btn neon-o">
+          <i class="ti ti-shield-check"></i> Auditar Ledger SHA-256
+        </button>
+        <div id="ledger-res"></div>
+      </div>
     </div>
   </div>
-  
-  <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title"><i class="ti ti-calendar"></i> Control de Eventos Activos</div>
-    <div style="margin-top: 16px; overflow-x: auto;">
-      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
-        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
-          <th style="padding: 12px;">ID</th>
-          <th style="padding: 12px;">Evento</th>
-          <th style="padding: 12px;">Fecha / Hora</th>
-          <th style="padding: 12px;">Estado</th>
-          <th style="padding: 12px;">Suspender</th>
-          <th style="padding: 12px;">Establecer Resultado y Liquidar</th>
-        </tr>
-        {% for event in active_events %}
-        <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 12px; color: var(--muted2);">{{ event.id }}</td>
-          <td style="padding: 12px; font-weight: 600;">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</td>
-          <td style="padding: 12px; color: var(--muted2);">{{ event.fecha_hora|date:"d/m H:i" }}</td>
-          <td style="padding: 12px;">
-            <span class="badge 
-              {% if event.estado == 'live' %}green
-              {% elif event.estado == 'suspendido' %}style="background:rgba(255,59,92,.15);color:var(--red);"
-              {% else %}style="background:rgba(255,170,0,.15);color:var(--amber);"
-              {% endif %}">
-              {{ event.get_estado_display }}
-            </span>
-          </td>
-          <td style="padding: 12px;">
-            {% if event.estado == 'suspendido' %}
-            <button onclick="adminToggleSuspender({{ event.id }}, 'unsuspend')" class="btn btn-sm btn-outline" style="padding:4px 10px;font-size:11px;">Habilitar</button>
-            {% else %}
-            <button onclick="adminToggleSuspender({{ event.id }}, 'suspend')" class="btn btn-sm btn-red" style="padding:4px 10px;font-size:11px;">Suspender</button>
-            {% endif %}
-          </td>
-          <td style="padding: 12px; display: flex; align-items: center; gap: 8px;">
-            <select id="res-{{ event.id }}" class="stake-inp" style="width: auto; padding: 4px; font-size: 11px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
-              <option value="local">Gana Local (1)</option>
-              <option value="empate">Empate (X)</option>
-              <option value="visita">Gana Visitante (2)</option>
-              <option value="cancelado">Cancelado (Reembolsar)</option>
-            </select>
-            <button onclick="adminLiquidarEvento({{ event.id }})" class="btn btn-sm btn-green" style="padding:4px 10px;font-size:11px;">Liquidar</button>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6" style="padding: 24px; text-align: center; color: var(--muted2);">No hay eventos activos para gestionar.</td>
-        </tr>
-        {% endfor %}
+
+  <!-- ═══ ROW 3: Alertas + Eventos (side by side) ═══ -->
+  <div class="op-row">
+    <div class="op-panel">
+      <div class="op-h" style="justify-content: space-between;">
+        <span><i class="ti ti-calendar"></i> Control de Eventos Activos</span>
+        <a href="{% url 'operator-add-event' %}" class="op-action-btn neon-o" style="padding: 4px 10px; font-size: 11px; width: auto;">
+          <i class="ti ti-plus"></i> Nuevo Evento
+        </a>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="op-tbl">
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acción</th>
+              <th>Resultado / Liquidar</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in active_events %}
+            <tr>
+              <td style="font-weight:600">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</td>
+              <td style="color:var(--muted2)">{{ event.fecha_hora|date:"d/m H:i" }}</td>
+              <td>
+                {% if event.estado == 'live' %}
+                  <span class="op-badge green">EN VIVO</span>
+                {% elif event.estado == 'suspendido' %}
+                  <span class="op-badge red">Suspendido</span>
+                {% else %}
+                  <span class="op-badge amber">{{ event.get_estado_display }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if event.estado == 'suspendido' %}
+                <button onclick="adminToggleSuspender({{ event.id }},'unsuspend')" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Habilitar</button>
+                {% else %}
+                <button onclick="adminToggleSuspender({{ event.id }},'suspend')" class="op-action-btn red-o" style="padding:5px 10px;font-size:11px;width:auto">Suspender</button>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <select id="res-{{ event.id }}" style="padding:5px 8px;font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;outline:none">
+                    <option value="local">Local (1)</option>
+                    <option value="empate">Empate (X)</option>
+                    <option value="visita">Visitante (2)</option>
+                    <option value="cancelado">Cancelar</option>
+                  </select>
+                  <button onclick="adminLiquidarEvento({{ event.id }})" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Liquidar</button>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:var(--muted2);padding:20px">No hay eventos activos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="op-panel">
+      <div class="op-h"><i class="ti ti-alert-triangle" style="color:var(--red)"></i> <span class="red">Alertas Anti-fraude</span></div>
+      <div style="overflow-y:auto;max-height:300px">
+        <table class="op-tbl">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>DNI</th>
+              <th>Motivo</th>
+              <th>Sev.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alerta in alertas %}
+            <tr>
+              <td style="color:var(--muted2);white-space:nowrap">{{ alerta.fecha|date:"d/m H:i" }}</td>
+              <td>{{ alerta.user.dni }}</td>
+              <td>{{ alerta.motivo }}</td>
+              <td style="color:{% if alerta.severidad == 'alta' %}var(--red){% else %}var(--amber){% endif %}">{{ alerta.get_severidad_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--muted2);padding:20px">Sin alertas pendientes ✓</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ROW 4: Usuarios ═══ -->
+  <div class="op-panel full">
+    <div class="op-h"><i class="ti ti-users"></i> Usuarios Registrados</div>
+    <div style="overflow-x:auto">
+      <table class="op-tbl">
+        <thead>
+          <tr>
+            <th>DNI</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td style="color:var(--muted2)">{{ u.dni }}</td>
+            <td style="font-weight:500">{{ u.nombre }} {{ u.apellido }}</td>
+            <td>{{ u.email }}</td>
+            <td>
+              {% if u.estado == 'verificado' %}
+                <span class="op-badge green">Verificado</span>
+              {% elif u.estado == 'autoexcluido' %}
+                <span class="op-badge red">Autoexcluido</span>
+              {% elif u.estado == 'bloqueado' %}
+                <span class="op-badge red">Bloqueado</span>
+              {% else %}
+                <span class="op-badge amber">{{ u.get_estado_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                {% if u.estado == 'pendiente_verificacion' %}
+                <button onclick="adminVerificarKYC({{ u.id }})" class="op-action-btn neon-o" style="padding:4px 10px;font-size:11px;width:auto">Verificar KYC</button>
+                {% endif %}
+                {% if u.estado != 'bloqueado' and u.estado != 'autoexcluido' and not u.is_staff %}
+                <button onclick="adminBloquear({{ u.id }})" class="op-action-btn red-o" style="padding:4px 10px;font-size:11px;width:auto">Bloquear</button>
+                {% endif %}
+                {% if u.estado == 'bloqueado' %}
+                <button onclick="adminDesbloquear({{ u.id }})" class="op-action-btn neon-o" style="padding:4px 10px;font-size:11px;width:auto">Desbloquear</button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:var(--muted2);padding:20px">No hay usuarios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
   </div>
 
-   <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title"><i class="ti ti-users"></i> Usuarios Registrados</div>
-    <div style="margin-top: 16px; overflow-x: auto;">
-      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
-        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
-          <th style="padding: 12px;">DNI</th>
-          <th style="padding: 12px;">Nombre</th>
-          <th style="padding: 12px;">Email</th>
-          <th style="padding: 12px;">Estado</th>
-          <th style="padding: 12px;">Acciones</th>
-        </tr>
-        {% for u in usuarios %}
-        <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 12px; color: var(--muted2);">{{ u.dni }}</td>
-          <td style="padding: 12px;">{{ u.nombre }} {{ u.apellido }}</td>
-          <td style="padding: 12px;">{{ u.email }}</td>
-          <td style="padding: 12px;">
-            <span class="badge
-              {% if u.estado == 'verificado' %}green
-              {% elif u.estado == 'autoexcluido' %} style="background:rgba(255,59,92,.15);color:var(--red);"
-              {% else %} style="background:rgba(255,170,0,.15);color:var(--amber);"
-              {% endif %}">
-              {{ u.get_estado_display }}
-            </span>
-          </td>
-          <td style="padding: 12px;">
-            {% if u.estado == 'pendiente_verificacion' %}
-            <button onclick="adminVerificarKYC({{ u.id }})" class="btn btn-sm btn-green" style="padding:4px 10px;font-size:11px;">Verificar KYC</button>
-            {% endif %}
-            {% if u.estado != 'bloqueado' and u.estado != 'autoexcluido' and not u.is_staff %}
-            <button onclick="adminBloquear({{ u.id }})" class="btn btn-sm btn-red" style="padding:4px 10px;font-size:11px;">Bloquear</button>
-            {% endif %}
-            {% if u.estado == 'bloqueado' %}
-            <button onclick="adminDesbloquear({{ u.id }})" class="btn btn-sm btn-outline" style="padding:4px 10px;font-size:11px;">Desbloquear</button>
-            {% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" style="padding: 24px; text-align: center; color: var(--muted2);">No hay usuarios registrados.</td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
-  </div>
-  
-  <div class="cfg-card" style="grid-column: 1 / -1;">
-    <div class="cfg-title">Verificación de Integridad del Ledger (Auditoría)</div>
-    <p style="color: var(--muted2); font-size: 13px; margin-bottom: 16px;">
-      Verifica que la cadena de hashes criptográficos SHA-256 de todas las transacciones financieras (partida doble) se mantenga íntegra.
-    </p>
-    <button onclick="verificarLedger()" class="btn" style="width: 100%; justify-content: center; background: var(--surface3); border: 1px solid var(--neon);">
-      Ejecutar Auditoría Completa
-    </button>
-    <div id="auditoria-result" style="margin-top: 16px; display: none; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.5);">
-    </div>
-  </div>
 </div>
 
 <script>
 async function verificarLedger() {
-    const resDiv = document.getElementById('auditoria-result');
+    const resDiv = document.getElementById('ledger-res');
     resDiv.style.display = 'block';
     resDiv.style.color = 'var(--text)';
     resDiv.innerHTML = 'Verificando firmas SHA-256...';
@@ -206,10 +263,12 @@ async function verificarLedger() {
         
         if (res.ok) {
             resDiv.style.color = 'var(--neon)';
+            resDiv.style.background = 'rgba(0,255,135,.08)';
             resDiv.innerHTML = '✅ ' + data.mensaje;
         } else {
             resDiv.style.color = 'var(--red)';
-            resDiv.innerHTML = 'INCONSISTENCIA DETECTADA:<br><br>' + JSON.stringify(data.errores, null, 2);
+            resDiv.style.background = 'rgba(255,59,92,.08)';
+            resDiv.innerHTML = '❌ INCONSISTENCIA:\n' + JSON.stringify(data.errores, null, 2);
         }
     } catch (err) {
         resDiv.style.color = 'var(--red)';
@@ -256,7 +315,9 @@ async function adminDesbloquear(userId) {
                   backgroundColor: 'rgba(0, 255, 135, 0.1)',
                   borderWidth: 2,
                   fill: true,
-                  tension: 0.4
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointBackgroundColor: '#00FF87'
               }]
           },
           options: {
@@ -265,11 +326,11 @@ async function adminDesbloquear(userId) {
               scales: {
                   y: {
                       grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                      ticks: { color: '#8892b0' }
+                      ticks: { color: '#8892b0', font: { size: 11 } }
                   },
                   x: {
                       grid: { display: false },
-                      ticks: { color: '#8892b0' }
+                      ticks: { color: '#8892b0', font: { size: 11 } }
                   }
               },
               plugins: {

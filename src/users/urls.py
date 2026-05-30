@@ -21,6 +21,7 @@ urlpatterns_web = [
     path('self-exclude/', views_web.self_exclude_view, name='self-exclude'),
     path('operator-dashboard/', views_web.operator_dashboard_view, name='operator-dashboard'),
     path('operator-dashboard/export-csv/', views_web.export_mincetur_csv, name='export-mincetur-csv'),
+    path('operator-dashboard/events/add/', views_web.add_event_view, name='operator-add-event'),
     path('verify-kyc/', views.admin_verify_kyc, name='admin-verify-kyc'),
     path('<int:user_id>/block/', views.admin_block_user, name='admin-block-user'),
     path('<int:user_id>/unblock/', views.admin_unblock_user, name='admin-unblock-user'),

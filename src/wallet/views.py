@@ -180,7 +180,9 @@ def verify_ledger(request):
         
         for entry in entries:
             # Recalcular hash esperado
-            data = f"{prev_hash}{entry.id}{entry.account_id}{entry.debit}{entry.credit}{entry.description}"
+            d_str = f"{entry.debit:.4f}"
+            c_str = f"{entry.credit:.4f}"
+            data = f"{prev_hash}{entry.id}{entry.account_id}{d_str}{c_str}{entry.description}"
             expected_hash = hashlib.sha256(data.encode('utf-8')).hexdigest()
             
             if entry.hash != expected_hash:

@@ -7,6 +7,7 @@
     <a href="/events/" class="ntab" style="text-decoration:none">
       <i class="ti ti-calendar-event"></i> Eventos
     </a>
+    {% if not user.is_staff %}
     <a href="/bets/" class="ntab" style="text-decoration:none">
       <i class="ti ti-history"></i> Mis Apuestas
     </a>
@@ -16,6 +17,7 @@
     <a href="{% url 'profile' %}" class="ntab" style="text-decoration:none">
       <i class="ti ti-user"></i> Mi Perfil
     </a>
+    {% endif %}
     {% if user.is_staff %}
     <a href="{% url 'operator-dashboard' %}" class="ntab" style="text-decoration:none; color: var(--neon);">
       <i class="ti ti-shield"></i> Operador
@@ -23,9 +25,11 @@
     {% endif %}
   </nav>
   <div class="topbar-end">
+    {% if not user.is_staff %}
     <div class="balance-chip" onclick="window.location.href='/wallet/'" style="cursor:pointer">
       <div><div class="lbl">Saldo (S/)</div><div class="val" id="wallet-amount">{{ user.balance|default:"0.00"|floatformat:2 }}</div></div>
     </div>
+    {% endif %}
     <form method="POST" action="{% url 'logout' %}" style="margin:0">
       {% csrf_token %}
       <button type="submit" class="notif-btn" title="Cerrar sesión" style="border:1px solid var(--border); background:var(--surface2);">

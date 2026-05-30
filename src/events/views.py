@@ -49,4 +49,12 @@ class MarketViewSet(viewsets.ModelViewSet):
 
 def event_list_view(request):
     events = Event.objects.all().order_by('fecha_hora').prefetch_related('markets')
-    return render(request, 'events/list.html', {'events': events, 'page_title': 'Eventos'})
+    categoria = request.GET.get('categoria')
+    if categoria:
+        events = events.filter(categoria=categoria)
+    return render(request, 'events/list.html', {
+        'events': events, 
+        'page_title': 'Eventos', 
+        'current_categoria': categoria,
+        'show_sport_bar': True
+    })

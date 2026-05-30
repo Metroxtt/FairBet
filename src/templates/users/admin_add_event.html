@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+  .add-evt-container { max-width: 600px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .add-evt-h { font-family: var(--font-disp); font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .add-evt-h i { color: var(--neon); font-size: 24px; }
+  .add-evt-form { display: flex; flex-direction: column; gap: 16px; }
+  .add-evt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .add-evt-col { display: flex; flex-direction: column; gap: 6px; }
+  .add-evt-col label { font-size: 12px; color: var(--muted2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .add-evt-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .add-evt-input:focus { border-color: var(--neon-border); }
+  .add-evt-submit { background: var(--neon); color: #0a0a0f; border: none; padding: 14px; border-radius: 8px; font-family: var(--font-disp); font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+  .add-evt-submit:hover { background: var(--neon-dim); box-shadow: 0 0 15px rgba(0,255,135,0.3); }
+  .add-evt-back { text-align: center; margin-top: 16px; }
+  .add-evt-back a { color: var(--muted2); font-size: 13px; text-decoration: none; transition: 0.2s; }
+  .add-evt-back a:hover { color: var(--text); }
+  .msg-alert { padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .msg-error { background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.3); color: var(--red); }
+</style>
+
+<div class="sec-hdr">
+  <div class="sec-title"><i class="ti ti-calendar-plus" style="color:var(--neon)"></i> {{ page_title }}</div>
+</div>
+
+<div class="add-evt-container">
+  <div class="add-evt-h"><i class="ti ti-trophy"></i> Crear Evento Deportivo</div>
+  
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg-alert {% if message.tags == 'error' %}msg-error{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="add-evt-form">
+    {% csrf_token %}
+    
+    <div class="add-evt-row">
+      <div class="add-evt-col" style="grid-column: 1 / -1;">
+        <label>Categoría Deportiva</label>
+        <select name="categoria" class="add-evt-input" required>
+          <option value="futbol">Fútbol</option>
+          <option value="basketball">Basketball</option>
+          <option value="tenis">Tenis</option>
+          <option value="esports">E-Sports</option>
+          <option value="boxeo">Boxeo</option>
+        </select>
+      </div>
+      <div class="add-evt-col">
+        <label>Equipo Local</label>
+        <input type="text" name="equipo_local" class="add-evt-input" placeholder="Ej: Real Madrid" required>
+      </div>
+      <div class="add-evt-col">
+        <label>Equipo Visitante</label>
+        <input type="text" name="equipo_visitante" class="add-evt-input" placeholder="Ej: Barcelona" required>
+      </div>
+    </div>
+
+    <div class="add-evt-col">
+      <label>Fecha y Hora del Evento</label>
+      <input type="datetime-local" name="fecha_hora" class="add-evt-input" required>
+    </div>
+
+    <div style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 16px;">
+      <div class="add-evt-h" style="font-size: 16px; margin-bottom: 12px;"><i class="ti ti-coin"></i> Mercado Inicial (1X2)</div>
+      
+      <div class="add-evt-row" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div class="add-evt-col">
+          <label>Cuota Local</label>
+          <input type="number" step="0.01" min="1.01" name="cuota_local" class="add-evt-input" placeholder="1.80" required>
+        </div>
+        <div class="add-evt-col">
+          <label>Cuota Empate</label>
+          <input type="number" step="0.01" min="1.01" name="cuota_empate" class="add-evt-input" placeholder="3.20" required>
+        </div>
+        <div class="add-evt-col">
+          <label>Cuota Visita</label>
+          <input type="number" step="0.01" min="1.01" name="cuota_visitante" class="add-evt-input" placeholder="4.50" required>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="add-evt-submit">
+      <i class="ti ti-check"></i> Publicar Evento
+    </button>
+  </form>
+
+  <div class="add-evt-back">
+    <a href="{% url 'operator-dashboard' %}">← Volver al Dashboard</a>
+  </div>
+</div>
+{% endblock %}

@@ -15,6 +15,14 @@ class Event(models.Model):
         EMPATE = 'empate', 'Empate'
         VISITA = 'visita', 'Visita'
 
+    class Categoria(models.TextChoices):
+        FUTBOL = 'futbol', 'Fútbol'
+        BASKETBALL = 'basketball', 'Basketball'
+        TENIS = 'tenis', 'Tenis'
+        ESPORTS = 'esports', 'E-Sports'
+        BOXEO = 'boxeo', 'Boxeo'
+
+    categoria = models.CharField('categoría', max_length=20, choices=Categoria.choices, default=Categoria.FUTBOL)
     equipo_local = models.CharField('equipo local', max_length=100)
     equipo_visitante = models.CharField('equipo visitante', max_length=100)
     fecha_hora = models.DateTimeField('fecha y hora')

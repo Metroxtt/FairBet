@@ -49,7 +49,7 @@
     </div>
     <div class="hist-result">
       <div class="hist-amount {% if entry.credit > 0 %}won{% else %}lost{% endif %}">
-        {% if entry.credit > 0 %}+S/ {{ entry.credit }}{% else %}-S/ {{ entry.debit }}{% endif %}
+        {% if entry.credit > 0 %}+S/ {{ entry.credit|floatformat:2 }}{% else %}-S/ {{ entry.debit|floatformat:2 }}{% endif %}
       </div>
       <div class="hist-state">Completado</div>
     </div>
@@ -68,5 +68,42 @@
   function setDep(val) {
     document.getElementById('dep-inp').value = val;
   }
+
+  document.getElementById('depositForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btn = document.querySelector('.dep-submit');
+    const amount = document.getElementById('dep-inp').value;
+    const url = this.getAttribute('action');
+    
+    btn.innerText = 'PROCESANDO...';
+    btn.disabled = true;
+
+    try {
+        const res = await apiFetch(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                amount: parseFloat(amount),
+                idempotency_key: crypto.randomUUID()
+            })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast ? showToast('¡Depósito exitoso! Tu saldo se ha actualizado.') : alert('¡Depósito exitoso!');
+            // Recargamos en 1 segundo para mostrar el nuevo saldo y transacción
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+        } else {
+            alert('Error: ' + (data.error || JSON.stringify(data)));
+        }
+    } catch(err) {
+        alert('Error de conexión o de red');
+    } finally {
+        btn.innerText = 'DEPOSITAR AHORA';
+        btn.disabled = false;
+    }
+  });
 </script>
 {% endblock %}

@@ -40,6 +40,10 @@ def place_bet(request):
         cache.set(cache_key, True, timeout=86400) # 24 horas de protección
 
     user = request.user
+    
+    if user.is_staff:
+        return Response({'error': 'Los administradores no pueden apostar en su propia plataforma.'},
+                        status=status.HTTP_403_FORBIDDEN)
 
     if not user.es_verificado:
         return Response({'error': 'Debe verificar su cuenta KYC antes de apostar'},

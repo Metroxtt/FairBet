@@ -74,6 +74,51 @@
       </table>
     </div>
   </div>
+   <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title"><i class="ti ti-users"></i> Usuarios Registrados</div>
+    <div style="margin-top: 16px; overflow-x: auto;">
+      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
+        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
+          <th style="padding: 12px;">DNI</th>
+          <th style="padding: 12px;">Nombre</th>
+          <th style="padding: 12px;">Email</th>
+          <th style="padding: 12px;">Estado</th>
+          <th style="padding: 12px;">Acciones</th>
+        </tr>
+        {% for u in usuarios %}
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px; color: var(--muted2);">{{ u.dni }}</td>
+          <td style="padding: 12px;">{{ u.nombre }} {{ u.apellido }}</td>
+          <td style="padding: 12px;">{{ u.email }}</td>
+          <td style="padding: 12px;">
+            <span class="badge
+              {% if u.estado == 'verificado' %}green
+              {% elif u.estado == 'autoexcluido' %} style="background:rgba(255,59,92,.15);color:var(--red);"
+              {% else %} style="background:rgba(255,170,0,.15);color:var(--amber);"
+              {% endif %}">
+              {{ u.get_estado_display }}
+            </span>
+          </td>
+          <td style="padding: 12px;">
+            {% if u.estado == 'pendiente_verificacion' %}
+            <button onclick="adminVerificarKYC({{ u.id }})" class="btn btn-sm btn-green" style="padding:4px 10px;font-size:11px;">Verificar KYC</button>
+            {% endif %}
+            {% if u.estado != 'bloqueado' and u.estado != 'autoexcluido' and not u.is_staff %}
+            <button onclick="adminBloquear({{ u.id }})" class="btn btn-sm btn-red" style="padding:4px 10px;font-size:11px;">Bloquear</button>
+            {% endif %}
+            {% if u.estado == 'bloqueado' %}
+            <button onclick="adminDesbloquear({{ u.id }})" class="btn btn-sm btn-outline" style="padding:4px 10px;font-size:11px;">Desbloquear</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="padding: 24px; text-align: center; color: var(--muted2);">No hay usuarios registrados.</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
   
   <div class="cfg-card" style="grid-column: 1 / -1;">
     <div class="cfg-title">Verificación de Integridad del Ledger (Auditoría)</div>
@@ -110,6 +155,29 @@ async function verificarLedger() {
         resDiv.style.color = 'var(--red)';
         resDiv.innerHTML = 'Error de conexión con el auditor.';
     }
+}
+async function adminVerificarKYC(userId) {
+    if (!confirm('¿Verificar KYC de este usuario?')) return;
+    const res = await apiFetch('/api/users/verify-kyc/', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, confirmar: true })
+    });
+    if (res.ok) { showToast('KYC verificado'); setTimeout(() => location.reload(), 1000); }
+    else { const d = await res.json(); showToast(d.error || 'Error'); }
+}
+
+async function adminBloquear(userId) {
+    if (!confirm('¿Bloquear este usuario?')) return;
+    const res = await apiFetch(`/api/users/${userId}/block/`, { method: 'POST' });
+    if (res.ok) { showToast('Usuario bloqueado'); setTimeout(() => location.reload(), 1000); }
+    else { const d = await res.json(); showToast(d.error || 'Error'); }
+}
+
+async function adminDesbloquear(userId) {
+    if (!confirm('¿Desbloquear este usuario?')) return;
+    const res = await apiFetch(`/api/users/${userId}/unblock/`, { method: 'POST' });
+    if (res.ok) { showToast('Usuario desbloqueado'); setTimeout(() => location.reload(), 1000); }
+    else { const d = await res.json(); showToast(d.error || 'Error'); }
 }
 </script>
 {% endblock %}

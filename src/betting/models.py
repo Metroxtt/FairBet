@@ -152,3 +152,23 @@ class ComboLeg(models.Model):
     class Meta:
         verbose_name = 'pierna de combo'
         verbose_name_plural = 'piernas de combo'
+
+class SuspiciousActivity(models.Model):
+    class Severidad(models.TextChoices):
+        ALTA = 'alta', 'Alta'
+        MEDIA = 'media', 'Media'
+        BAJA = 'baja', 'Baja'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='alertas_fraude')
+    motivo = models.CharField('motivo', max_length=255)
+    severidad = models.CharField('severidad', max_length=20, choices=Severidad.choices, default=Severidad.MEDIA)
+    fecha = models.DateTimeField('fecha de detección', auto_now_add=True)
+    resuelto = models.BooleanField('resuelto', default=False)
+
+    class Meta:
+        verbose_name = 'actividad sospechosa'
+        verbose_name_plural = 'actividades sospechosas'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'{self.user.dni} - {self.get_severidad_display()} - {self.motivo}'

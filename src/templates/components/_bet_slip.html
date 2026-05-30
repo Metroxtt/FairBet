@@ -50,6 +50,11 @@
       <button class="bet-now-btn" id="placeBetBtn" onclick="placeBet()" disabled>APOSTAR AHORA</button>
     </div>
   </div>
+  
+  <div style="padding: 12px; background: rgba(255,50,50,0.1); border-top: 1px solid var(--border); font-size: 11px; text-align: center; color: var(--muted); border-radius: 0 0 12px 12px;">
+    <strong>Consumo Responsable:</strong> Juega solo por diversión y establece límites de depósito. 
+    <br>Si sientes que pierdes el control, considera la autoexclusión.
+  </div>
 </div>
 
 <!-- LEADERBOARD -->
@@ -81,6 +86,10 @@
 </div>
 
 <script>
+  let currentEventId = null;
+  let currentSelection = null;
+  let currentMarketId = 1;
+
   function setStake(amount) {
     document.getElementById('stakeInput').value = amount;
     updatePotentialWin();
@@ -100,11 +109,16 @@
     document.getElementById('betSlipEmpty').style.display = 'block';
     document.getElementById('bs-count').innerText = '0';
     document.getElementById('stakeInput').value = '';
+    currentEventId = null;
+    currentSelection = null;
     updatePotentialWin();
   }
 
-  // Temporary function to mock adding to slip for UI testing
-  function addToSlip(label, eventId) {
+  function addToSlip(label, eventId, marketId = 1) {
+    currentEventId = eventId;
+    currentSelection = label === 'visitante' ? 'visita' : label;
+    currentMarketId = marketId;
+
     document.getElementById('betSlipEmpty').style.display = 'none';
     document.getElementById('betSlipItems').style.display = 'block';
     document.getElementById('bs-count').innerText = '1';
@@ -118,5 +132,51 @@
     document.getElementById('slipPick').innerText = '✓ ' + label.toUpperCase();
     
     updatePotentialWin();
+  }
+
+  async function placeBet() {
+    const btn = document.getElementById('placeBetBtn');
+    btn.disabled = true;
+    btn.innerText = 'PROCESANDO...';
+
+    const stake = document.getElementById('stakeInput').value;
+    const cuota = document.getElementById('totalOdd').innerText.replace('×', '');
+    
+    try {
+      const res = await apiFetch('/api/betting/place/', {
+        method: 'POST',
+        headers: {
+            'X-Idempotency-Key': crypto.randomUUID()
+        },
+        body: JSON.stringify({
+          event_id: currentEventId,
+          market_id: currentMarketId,
+          seleccion: currentSelection,
+          monto: stake,
+          cuota_esperada: cuota
+        })
+      });
+      const data = await res.json();
+      if(res.ok) {
+        showToast('Apuesta confirmada exitosamente');
+        clearBetSlip();
+      } else {
+        if(data.codigo === 'RE_COTIZACION') {
+            showToast('⚠️ La cuota ha cambiado a ' + data.nueva_cuota + '. Por favor revisa y reconfirma tu apuesta.');
+            document.getElementById('totalOdd').innerText = data.nueva_cuota + '×';
+            document.getElementById('slipOdd').innerText = data.nueva_cuota + '×';
+            updatePotentialWin();
+        } else {
+            showToast('Error: ' + (data.error || JSON.stringify(data)));
+        }
+      }
+    } catch(err) {
+      showToast('Error de conexión');
+    } finally {
+      btn.innerText = 'APOSTAR AHORA';
+      if(document.getElementById('stakeInput').value >= 5) {
+        btn.disabled = false;
+      }
+    }
   }
 </script>

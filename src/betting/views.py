@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
@@ -28,6 +29,15 @@ class BetHistoryView(generics.ListAPIView):
 def place_bet(request):
     serializer = PlaceBetSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    
+    # 1. Idempotency Key
+    idemp_key = request.headers.get('X-Idempotency-Key') or serializer.validated_data.get('idempotency_key')
+    if idemp_key:
+        from django.core.cache import cache
+        cache_key = f'idemp_bet_{idemp_key}'
+        if cache.get(cache_key):
+            return Response({'error': 'Solicitud duplicada. Esta apuesta ya fue procesada.'}, status=status.HTTP_409_CONFLICT)
+        cache.set(cache_key, True, timeout=86400) # 24 horas de protección
 
     user = request.user
 
@@ -67,6 +77,15 @@ def place_bet(request):
     if not cuota:
         return Response({'error': 'Seleccion invalida'},
                         status=status.HTTP_400_BAD_REQUEST)
+                        
+    # 2. Política de re-cotización
+    cuota_esperada = serializer.validated_data.get('cuota_esperada')
+    if cuota_esperada and cuota != cuota_esperada:
+        return Response({
+            'error': 'La cuota ha cambiado.',
+            'codigo': 'RE_COTIZACION',
+            'nueva_cuota': str(cuota)
+        }, status=status.HTTP_409_CONFLICT)
 
     from_account, _ = Account.objects.get_or_create(
         user=user, account_type=Account.Tipo.WALLET_USUARIO
@@ -87,8 +106,18 @@ def place_bet(request):
 
     bet = Bet.objects.create(
         user=user, event=event, market=market,
-        seleccion=seleccion, cuota_al_apostar=cuota, monto=monto
+        seleccion=seleccion, cuota_al_apostar=cuota, monto=monto,
+        idempotency_key=idemp_key if idemp_key else uuid.uuid4()
     )
+    
+    # 3. Anti-fraude básico
+    if monto >= Decimal('2000'):
+        from .models import SuspiciousActivity
+        SuspiciousActivity.objects.create(
+            user=user,
+            motivo=f'Apuesta inusualmente alta de {monto} fichas.',
+            severidad=SuspiciousActivity.Severidad.ALTA
+        )
 
     return Response(BetSerializer(bet).data, status=status.HTTP_201_CREATED)
 

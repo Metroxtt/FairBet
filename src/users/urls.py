@@ -20,4 +20,5 @@ urlpatterns_web = [
     path('deposit-limits/', views_web.deposit_limits_view, name='deposit-limits-web'),
     path('self-exclude/', views_web.self_exclude_view, name='self-exclude'),
     path('operator-dashboard/', views_web.operator_dashboard_view, name='operator-dashboard'),
+    path('operator-dashboard/export-csv/', views_web.export_mincetur_csv, name='export-mincetur-csv'),
 ]

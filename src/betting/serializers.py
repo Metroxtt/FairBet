@@ -18,6 +18,7 @@ class PlaceBetSerializer(serializers.Serializer):
     market_id = serializers.IntegerField()
     seleccion = serializers.ChoiceField(choices=['local', 'empate', 'visita'])
     monto = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal('0.01'))
+    cuota_esperada = serializers.DecimalField(max_digits=10, decimal_places=4, required=False)
     idempotency_key = serializers.UUIDField(required=False)
 
 class ComboLegSerializer(serializers.ModelSerializer):

@@ -55,8 +55,12 @@ def operator_dashboard_view(request):
     if not request.user.is_staff:
         return redirect('home')
         
-    from django.db.models import Sum
-    from betting.models import Bet
+    from django.db.models import Sum, Count
+    from betting.models import Bet, SuspiciousActivity
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
     
     # Calcular GGR = Total Apostado (won+lost) - Total Pagado (won)
     total_apostado_liquidado = Bet.objects.filter(estado__in=[Bet.Estado.WON, Bet.Estado.LOST]).aggregate(t=Sum('monto'))['t'] or 0
@@ -69,9 +73,57 @@ def operator_dashboard_view(request):
         
     ggr = total_apostado_liquidado - ganancias_pagadas
     
+    # Usuarios Activos (registrados en últimas 24h o que apostaron en últimas 24h)
+    ayer = timezone.now() - timedelta(days=1)
+    usuarios_activos = User.objects.filter(last_login__gte=ayer).count()
+    
+    # Exposure por evento (cuánto se perdería si todos ganan)
+    exposure_total = Bet.objects.filter(estado=Bet.Estado.ACCEPTED).aggregate(t=Sum('monto_potencial'))['t'] or 0
+    
+    alertas = SuspiciousActivity.objects.filter(resuelto=False).order_by('-fecha')[:10]
+    
     return render(request, 'users/admin_dashboard.html', {
         'page_title': 'Dashboard del Operador',
         'ggr': ggr,
         'total_apostado_liquidado': total_apostado_liquidado,
-        'ganancias_pagadas': ganancias_pagadas
+        'ganancias_pagadas': ganancias_pagadas,
+        'usuarios_activos': usuarios_activos,
+        'exposure_total': exposure_total,
+        'alertas': alertas,
     })
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def export_mincetur_csv(request):
+    if not request.user.is_staff:
+        return redirect('home')
+        
+    from betting.models import Bet
+    import datetime
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="reporte_mincetur_{datetime.date.today()}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['ID Transaccion', 'DNI Usuario', 'Fecha', 'Evento', 'Mercado', 'Seleccion', 'Monto Apostado (PEN)', 'Cuota', 'Estado', 'Pago (PEN)'])
+    
+    apuestas = Bet.objects.all().select_related('user', 'event', 'market').order_by('-created_at')
+    
+    for bet in apuestas:
+        writer.writerow([
+            bet.id,
+            bet.user.dni,
+            bet.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            f"{bet.event.equipo_local} vs {bet.event.equipo_visitante}",
+            bet.market.tipo,
+            bet.seleccion,
+            f"{bet.monto:.2f}",
+            f"{bet.cuota_actual:.2f}",
+            bet.estado,
+            f"{bet.pago_potencial:.2f}" if bet.estado == Bet.Estado.WON else "0.00"
+        ])
+        
+    return response
+

@@ -28,6 +28,50 @@
         <span style="color: var(--muted2);">Ganancias Pagadas:</span>
         <strong style="color: var(--red);">S/. {{ ganancias_pagadas|floatformat:2 }}</strong>
       </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted2);">Usuarios Activos (24h):</span>
+        <strong style="color: var(--text);">{{ usuarios_activos }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted2);">Exposure Actual (Riesgo):</span>
+        <strong style="color: var(--amber);">S/. {{ exposure_total|floatformat:2 }}</strong>
+      </div>
+    </div>
+  </div>
+  
+  <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title">Reporte MINCETUR</div>
+    <p style="color: var(--muted2); font-size: 13px; margin-bottom: 16px;">
+      Descargar el historial mensual exportable en formato CSV con columnas normativas.
+    </p>
+    <a href="{% url 'export-mincetur-csv' %}" class="btn" style="width: 100%; justify-content: center; background: var(--surface3); border: 1px solid var(--blue); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+      <i class="ti ti-download"></i> Descargar Reporte CSV
+    </a>
+  </div>
+  
+  <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title" style="color: var(--red);">Alertas Anti-fraude (SuspiciousActivity)</div>
+    <div style="margin-top: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
+        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
+          <th style="padding: 12px;">Fecha</th>
+          <th style="padding: 12px;">Usuario</th>
+          <th style="padding: 12px;">Motivo</th>
+          <th style="padding: 12px;">Severidad</th>
+        </tr>
+        {% for alerta in alertas %}
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px; color: var(--muted2);">{{ alerta.fecha|date:"d/m H:i" }}</td>
+          <td style="padding: 12px;">{{ alerta.user.dni }}</td>
+          <td style="padding: 12px;">{{ alerta.motivo }}</td>
+          <td style="padding: 12px; color: {% if alerta.severidad == 'alta' %}var(--red){% else %}var(--amber){% endif %};">{{ alerta.get_severidad_display }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="padding: 24px; text-align: center; color: var(--muted2);">No hay alertas pendientes de revisión.</td>
+        </tr>
+        {% endfor %}
+      </table>
     </div>
   </div>
   
@@ -60,7 +104,7 @@ async function verificarLedger() {
             resDiv.innerHTML = '✅ ' + data.mensaje;
         } else {
             resDiv.style.color = 'var(--red)';
-            resDiv.innerHTML = '❌ INCONSISTENCIA DETECTADA:<br><br>' + JSON.stringify(data.errores, null, 2);
+            resDiv.innerHTML = 'INCONSISTENCIA DETECTADA:<br><br>' + JSON.stringify(data.errores, null, 2);
         }
     } catch (err) {
         resDiv.style.color = 'var(--red)';

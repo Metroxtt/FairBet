@@ -9,10 +9,23 @@ from users.models import User
 @login_required
 def home_view(request):
     from events.models import Event
-    featured_events = Event.objects.exclude(estado='finished').order_by('fecha_hora')[:4]
+    from wallet.models import Account
+    from betting.models import Bet
+    from django.db.models import Sum
+    from django.utils import timezone
+    
+    featured_events = Event.objects.exclude(estado='finished').prefetch_related('markets').order_by('fecha_hora')[:4]
+    
+    account = Account.objects.filter(user=request.user, account_type=Account.Tipo.WALLET_USUARIO).first()
+    active_bets = Bet.objects.filter(user=request.user, estado=Bet.Estado.PENDING).count()
+    wagered_today = Bet.objects.filter(user=request.user, created_at__date=timezone.now().date()).aggregate(t=Sum('monto'))['t'] or 0
+    
     return render(request, 'home.html', {
         'page_title': 'Dashboard',
-        'featured_events': featured_events
+        'featured_events': featured_events,
+        'account': account,
+        'active_bets': active_bets,
+        'wagered_today': wagered_today
     })
 
 # Vista de inicio de sesion: valida credenciales con authenticate()

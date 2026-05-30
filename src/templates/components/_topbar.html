@@ -24,7 +24,7 @@
   </nav>
   <div class="topbar-end">
     <div class="balance-chip" onclick="window.location.href='/wallet/'" style="cursor:pointer">
-      <div><div class="lbl">Saldo (S/)</div><div class="val" id="wallet-amount">0.00</div></div>
+      <div><div class="lbl">Saldo (S/)</div><div class="val" id="wallet-amount">{{ user.balance|default:"0.00"|floatformat:2 }}</div></div>
     </div>
     <form method="POST" action="{% url 'logout' %}" style="margin:0">
       {% csrf_token %}

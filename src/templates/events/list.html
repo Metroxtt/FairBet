@@ -75,9 +75,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Obtenemos todos los eventos listados en la pantalla
-    const eventOddsContainers = document.querySelectorAll('.event-odds');
+    const eventContainers = document.querySelectorAll('.ev-markets');
     
-    eventOddsContainers.forEach(container => {
+    eventContainers.forEach(container => {
         const eventId = container.getAttribute('data-event-id');
         if (!eventId) return;
 
@@ -115,12 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateOdd(elementId, newValue) {
         const el = document.getElementById(elementId);
         if (el && newValue && newValue !== 'None') {
+            const formattedValue = parseFloat(newValue).toFixed(2);
             // Si el valor cambia, animamos
-            if (el.innerText !== newValue && el.innerText !== '-') {
+            if (el.innerText !== formattedValue && el.innerText !== '-') {
                 el.classList.add('glow-update');
                 setTimeout(() => el.classList.remove('glow-update'), 1000);
             }
-            el.innerText = newValue;
+            el.innerText = formattedValue;
         } else if (el) {
             el.innerText = '-';
         }

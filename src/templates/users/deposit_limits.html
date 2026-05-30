@@ -89,9 +89,9 @@ function actualizarBarras(data) {
 async function cargarLimites() {
     const res = await apiFetch('/api/users/deposit-limits/');
     const data = await res.json();
-    document.getElementById('daily_limit').value = data.daily_limit;
-    document.getElementById('weekly_limit').value = data.weekly_limit;
-    document.getElementById('monthly_limit').value = data.monthly_limit;
+    document.getElementById('daily_limit').value = parseFloat(data.daily_limit).toFixed(2);
+    document.getElementById('weekly_limit').value = parseFloat(data.weekly_limit).toFixed(2);
+    document.getElementById('monthly_limit').value = parseFloat(data.monthly_limit).toFixed(2);
     actualizarBarras(data);
 
     if (data.cooldown_hasta) {

@@ -9,15 +9,19 @@
 <div class="wallet-grid">
   <div class="w-card main">
     <div class="w-lbl">Saldo disponible</div>
-    <div class="w-val">S/ {{ account.balance|default:"0.00" }}</div>
+    <div class="w-val">S/ {{ account.balance|default:"0.00"|floatformat:2 }}</div>
   </div>
   <div class="w-card">
     <div class="w-lbl">Límite Diario Restante</div>
-    <div class="w-subval" style="color:var(--text)">--</div>
+    <div class="w-subval" style="color:var(--text)">S/ {{ daily_remaining|floatformat:2 }}</div>
+  </div>
+  <div class="w-card">
+    <div class="w-lbl">Límite Semanal Restante</div>
+    <div class="w-subval" style="color:var(--amber)">S/ {{ weekly_remaining|floatformat:2 }}</div>
   </div>
   <div class="w-card">
     <div class="w-lbl">Límite Mensual Restante</div>
-    <div class="w-subval" style="color:var(--neon)">--</div>
+    <div class="w-subval" style="color:var(--neon)">S/ {{ monthly_remaining|floatformat:2 }}</div>
   </div>
 </div>
 

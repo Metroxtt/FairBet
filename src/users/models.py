@@ -84,6 +84,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def esta_autoexcluido(self):
         return self.estado == EstadoUser.AUTOEXCLUIDO
 
+    @property
+    def balance(self):
+        from wallet.models import Account
+        acc = Account.objects.filter(user=self, account_type=Account.Tipo.WALLET_USUARIO).first()
+        return acc.balance if acc else 0
+
 
 class DepositLimit(models.Model):
     user = models.OneToOneField(

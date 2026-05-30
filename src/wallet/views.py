@@ -13,7 +13,53 @@ def wallet_index_view(request):
         user=request.user, account_type=Account.Tipo.WALLET_USUARIO
     )
     transactions = LedgerEntry.objects.filter(account=account).order_by('-created_at')[:20]
-    return render(request, 'wallet/index.html', {'account': account, 'transactions': transactions, 'page_title': 'Mi Billetera'})
+    
+    from users.models import DepositLimit
+    from django.db.models import Sum
+    from django.utils import timezone
+    from datetime import timedelta
+    from decimal import Decimal
+    
+    limit, _ = DepositLimit.objects.get_or_create(user=request.user)
+    
+    now = timezone.now()
+    start_of_day = now - timedelta(days=1)
+    start_of_week = now - timedelta(days=7)
+    start_of_month = now - timedelta(days=30)
+    
+    daily_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_day
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+
+    weekly_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_week
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+
+    monthly_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_month
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+    
+    daily_remaining = max(Decimal('0'), limit.daily_limit - daily_deposits)
+    weekly_remaining = max(Decimal('0'), limit.weekly_limit - weekly_deposits)
+    monthly_remaining = max(Decimal('0'), limit.monthly_limit - monthly_deposits)
+    
+    return render(request, 'wallet/index.html', {
+        'account': account,
+        'transactions': transactions,
+        'page_title': 'Mi Billetera',
+        'daily_remaining': daily_remaining,
+        'weekly_remaining': weekly_remaining,
+        'monthly_remaining': monthly_remaining
+    })
 
 
 class BalanceView(generics.RetrieveAPIView):

@@ -13,7 +13,7 @@
     <div>
       <div class="hist-match">{{ bet.event.equipo_local }} vs {{ bet.event.equipo_visitante }}</div>
       <div class="hist-detail">
-        Selección: <strong>{{ bet.get_seleccion_display|default:bet.seleccion|title }}</strong> · Cuota: {{ bet.cuota_al_apostar }}× · Apostado S/ {{ bet.monto }}
+        Selección: <strong>{{ bet.get_seleccion_display|default:bet.seleccion|title }}</strong> · Cuota: {{ bet.cuota_al_apostar|floatformat:2 }}× · Apostado S/ {{ bet.monto|floatformat:2 }}
       </div>
       {% if bet.estado == 'pending' %}
       <div style="margin-top: 10px;">

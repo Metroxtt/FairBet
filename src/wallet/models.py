@@ -134,6 +134,7 @@ def check_deposit_limit(user, amount):
     now = timezone.now()
     
     start_of_day = now - timedelta(days=1)
+    start_of_week = now - timedelta(days=7)
     start_of_month = now - timedelta(days=30)
     
     account = getattr(user, 'wallet_account', None)
@@ -147,6 +148,13 @@ def check_deposit_limit(user, amount):
         created_at__gte=start_of_day
     ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
 
+    weekly_deposits = LedgerEntry.objects.filter(
+        account=account,
+        credit__gt=0,
+        description__icontains='depósito',
+        created_at__gte=start_of_week
+    ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
+
     monthly_deposits = LedgerEntry.objects.filter(
         account=account,
         credit__gt=0,
@@ -155,7 +163,10 @@ def check_deposit_limit(user, amount):
     ).aggregate(total=Sum('credit'))['total'] or Decimal('0')
 
     if daily_deposits + amount > limit.daily_limit:
-        raise ValueError(f'Este depósito excede tu límite diario de ${limit.daily_limit}')
+        raise ValueError(f'Este depósito excede tu límite diario de S/ {limit.daily_limit}')
+    
+    if weekly_deposits + amount > limit.weekly_limit:
+        raise ValueError(f'Este depósito excede tu límite semanal de S/ {limit.weekly_limit}')
     
     if monthly_deposits + amount > limit.monthly_limit:
-        raise ValueError(f'Este depósito excede tu límite mensual de ${limit.monthly_limit}')
+        raise ValueError(f'Este depósito excede tu límite mensual de S/ {limit.monthly_limit}')

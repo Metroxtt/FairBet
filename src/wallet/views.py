@@ -108,7 +108,7 @@ def deposit(request):
         account_type=Account.Tipo.CASA
     )
     if created:
-        LedgerEntry.objects.create(account=from_account, credit=1000000, description='Fondo inicial Casa')
+        LedgerEntry.objects.create(account=from_account, credit=10000, description='Fondo inicial Casa')
     to_account, _ = Account.objects.get_or_create(
         user=user,
         account_type=Account.Tipo.WALLET_USUARIO
@@ -152,7 +152,7 @@ def withdraw(request):
         account_type=Account.Tipo.CASA
     )
     if created:
-        LedgerEntry.objects.create(account=to_account, credit=1000000, description='Fondo inicial Casa')
+        LedgerEntry.objects.create(account=to_account, credit=10000, description='Fondo inicial Casa')
 
     try:
         transfer(from_account, to_account, amount, f'Retiro de {user}',

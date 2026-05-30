@@ -164,12 +164,15 @@
       matchName = `${team1} vs ${team2}`;
     }
 
+    const parsedOddVal = parseFloat(oddValueText);
+    const cleanOdd = isNaN(parsedOddVal) ? '2.10' : parsedOddVal.toFixed(2);
+
     const newPick = {
       eventId: eventId,
       marketId: marketId,
       selection: apiSelection,
       label: displayLabel || label,
-      oddValue: oddValueText,
+      oddValue: cleanOdd,
       matchName: matchName
     };
 
@@ -205,6 +208,14 @@
       let endpoint = '';
       let payload = {};
 
+      const parsedOdd = parseFloat(slipPicks[0].oddValue);
+      if (isNaN(parsedOdd)) {
+        showToast('Error: Cuota inválida. Intenta de nuevo.');
+        btn.disabled = false;
+        btn.innerText = 'APOSTAR AHORA';
+        return;
+      }
+
       if (slipPicks.length === 1) {
         endpoint = '/api/bets/place/';
         payload = {
@@ -212,18 +223,21 @@
           market_id: slipPicks[0].marketId,
           seleccion: slipPicks[0].selection,
           monto: stake,
-          cuota_esperada: slipPicks[0].oddValue
+          cuota_esperada: parsedOdd
         };
       } else {
         endpoint = '/api/bets/combo/place/';
         payload = {
           monto: stake,
-          legs: slipPicks.map(p => ({
-            event_id: p.eventId,
-            market_id: p.marketId,
-            seleccion: p.selection,
-            cuota_esperada: p.oddValue
-          }))
+          legs: slipPicks.map(p => {
+            const odd = parseFloat(p.oddValue);
+            return {
+              event_id: p.eventId,
+              market_id: p.marketId,
+              seleccion: p.selection,
+              cuota_esperada: isNaN(odd) ? undefined : odd
+            };
+          })
         };
       }
 

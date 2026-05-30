@@ -77,3 +77,44 @@ def verify_kyc(request):
         {'mensaje': 'Cuenta verificada correctamente', 'estado': user.estado},
         status=status.HTTP_200_OK,
     )
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_verify_kyc(request):
+    user_id = request.data.get('user_id')
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    if user.estado != EstadoUser.PENDIENTE_VERIFICACION:
+        return Response({'error': f'El usuario ya está en estado: {user.get_estado_display()}'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    user.estado = EstadoUser.VERIFICADO
+    user.save(update_fields=['estado'])
+    return Response({'mensaje': f'KYC de {user.email} verificado'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_block_user(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    if user.is_staff:
+        return Response({'error': 'No puedes bloquear a otro administrador'}, status=status.HTTP_403_FORBIDDEN)
+    user.estado = EstadoUser.BLOQUEADO
+    user.save(update_fields=['estado'])
+    return Response({'mensaje': f'Usuario {user.email} bloqueado'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_unblock_user(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    user.estado = EstadoUser.PENDIENTE_VERIFICACION
+    user.save(update_fields=['estado'])
+    return Response({'mensaje': f'Usuario {user.email} desbloqueado'}, status=status.HTTP_200_OK)

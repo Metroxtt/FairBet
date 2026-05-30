@@ -2,16 +2,6 @@
 {% block title %}Eventos{% endblock %}
 
 {% block content %}
-<div class="sport-filters">
-  <button class="sport-filter active" onclick="filterSport(this,'Todos')">🌐 Todos</button>
-  <button class="sport-filter" onclick="filterSport(this,'Fútbol')">⚽ Fútbol</button>
-  <button class="sport-filter" onclick="filterSport(this,'Baloncesto')">🏀 Baloncesto</button>
-  <button class="sport-filter" onclick="filterSport(this,'Tenis')">🎾 Tenis</button>
-  <button class="sport-filter" onclick="filterSport(this,'Boxeo')">🥊 Boxeo</button>
-  <button class="sport-filter" onclick="filterSport(this,'eSports')">🎮 eSports</button>
-  <button class="sport-filter" onclick="filterSport(this,'Béisbol')">⚾ Béisbol</button>
-</div>
-
 <div class="events-grid" id="eventsGrid">
   {% for event in events %}
   <div class="ev" id="ev-{{ event.id }}">

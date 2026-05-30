@@ -2,87 +2,75 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="stats-row">
-  <div class="stat-card">
-    <div class="stat-label">Balance Total</div>
-    <div class="stat-value gold">S/ 1,240</div>
-    <div class="stat-sub"><span class="up">▲ +8.4%</span> este mes</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Apuestas Activas</div>
-    <div class="stat-value">7</div>
-    <div class="stat-sub">3 <span class="up">en vivo</span> · 4 pendientes</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Ganancia Mes</div>
-    <div class="stat-value green">S/ 380</div>
-    <div class="stat-sub"><span class="up">▲ 62%</span> win rate</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Eventos Hoy</div>
-    <div class="stat-value">48</div>
-    <div class="stat-sub">12 deportes disponibles</div>
-  </div>
-</div>
-
-<div class="promo-banner">
-  <div style="font-size:36px">🏆</div>
-  <div class="promo-text">
-    <h3>Bono de Bienvenida — 100% hasta S/ 500</h3>
-    <p>Deposita hoy y duplica tu primer depósito. Aplica T&C.</p>
-  </div>
-  <button class="btn btn-gold" style="margin-left:auto;margin-right:60px;flex-shrink:0" onclick="window.location.href='/wallet/'">Depositar ahora</button>
-</div>
-
-<div class="grid2">
-  <!-- Eventos destacados -->
-  <div>
-    <div class="section-header">
-      <div class="section-title">Eventos <span>Destacados</span></div>
-      <button class="btn btn-outline btn-sm" onclick="window.location.href='/events/'">Ver todos</button>
+<div class="hero" style="margin-bottom: 24px;">
+  <div class="hero-label">Panel principal</div>
+  <div class="hero-title">BIENVENIDO,<br><em>{{ user.username|upper }}</em></div>
+  <div class="hero-sub">Eventos disponibles hoy · Cuotas en vivo</div>
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-val neon">S/ {{ account.balance|default:"0.00" }}</div>
+      <div class="kpi-lbl">Tu saldo</div>
     </div>
-    <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Evento</th>
-            <th>1</th>
-            <th>X</th>
-            <th>2</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="featuredEvents">
-          <!-- TODO: Load dynamically -->
-        </tbody>
-      </table>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--blue)">{{ active_bets|default:"0" }}</div>
+      <div class="kpi-lbl">Apuestas Activas</div>
     </div>
-  </div>
-
-  <!-- Últimas apuestas -->
-  <div>
-    <div class="section-header">
-      <div class="section-title">Últimas <span>Apuestas</span></div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--neon)">{{ win_rate|default:"0" }}%</div>
+      <div class="kpi-lbl">Tasa de aciertos</div>
     </div>
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Evento</th><th>Cuota</th><th>Monto</th><th>Estado</th></tr>
-        </thead>
-        <tbody id="lastBets">
-          <!-- TODO: Load dynamically -->
-        </tbody>
-      </table>
+    <div class="kpi">
+      <div class="kpi-val amber">S/ {{ wagered_today|default:"0" }}</div>
+      <div class="kpi-lbl">Apostado hoy</div>
     </div>
   </div>
 </div>
 
-<!-- Transacciones recientes -->
-<div class="section-header">
-  <div class="section-title">Movimientos <span>Recientes</span></div>
-  <button class="btn btn-outline btn-sm" onclick="window.location.href='/wallet/'">Ver historial</button>
+<div class="sec-hdr">
+  <div class="sec-title">Eventos Destacados <span class="accent" style="margin-left: 6px;">/ Hoy</span></div>
+  <span class="see-all" onclick="window.location.href='/events/'">Ver todos →</span>
 </div>
-<div class="card" id="recentTx">
-  <!-- TODO: Load dynamically -->
+
+<div class="events-grid" id="eventsGrid">
+  {% for event in featured_events %}
+  <div class="ev" id="ev-{{ event.id }}">
+    <div class="ev-top">
+      <div class="ev-sport-badge">
+        <span class="dot" style="background:#22C55E"></span>
+        Fútbol
+      </div>
+      <div class="ev-meta">
+        {% if event.estado == 'live' %}
+        <span class="ev-live">LIVE</span>
+        {% endif %}
+        <span class="ev-time"><i class="ti ti-clock" style="font-size:11px"></i> {{ event.fecha_hora|date:"d/m H:i" }}</span>
+      </div>
+    </div>
+    <div class="ev-matchup">
+      <div class="ev-team">{{ event.equipo_local }}</div>
+      <div class="ev-vs">VS</div>
+      <div class="ev-team right">{{ event.equipo_visitante }}</div>
+    </div>
+    <div class="odds-strip three event-odds" data-event-id="{{ event.id }}">
+      <div class="odd-box" onclick="addToSlip('local', {{ event.id }})">
+        <span class="odd-lbl">1</span>
+        <span class="odd-num" id="odd-local-{{ event.id }}">-</span>
+      </div>
+      <div class="odd-box" onclick="addToSlip('empate', {{ event.id }})">
+        <span class="odd-lbl">X</span>
+        <span class="odd-num" id="odd-empate-{{ event.id }}">-</span>
+      </div>
+      <div class="odd-box" onclick="addToSlip('visitante', {{ event.id }})">
+        <span class="odd-lbl">2</span>
+        <span class="odd-num" id="odd-visitante-{{ event.id }}">-</span>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="ev" style="justify-content:center; text-align:center; padding:40px;">
+    <span style="color:var(--muted2); font-size:13px;">No hay eventos destacados en este momento.</span>
+  </div>
+  {% endfor %}
 </div>
+
 {% endblock %}

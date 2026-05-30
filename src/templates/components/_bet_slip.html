@@ -16,19 +16,14 @@
   
   <!-- Content State -->
   <div id="betSlipItems" style="display:none;">
-    <div class="bs-pick">
-      <div class="bs-pick-info">
-        <div class="bs-pick-match" id="slipEvent">Equipo A vs Equipo B</div>
-        <div class="bs-pick-sel" id="slipPick">✓ Equipo A</div>
-      </div>
-      <div class="bs-pick-odd" id="slipOdd">2.10×</div>
-      <div class="bs-pick-rm" onclick="clearBetSlip()"><i class="ti ti-x"></i></div>
+    <div id="bs-picks-container">
+      <!-- Picks will be injected here via JS -->
     </div>
     
     <div class="bs-footer">
       <div class="bs-total-row">
         <span class="bs-total-label">Cuota total</span>
-        <span class="bs-total-val" id="totalOdd">2.10×</span>
+        <span class="bs-total-val" id="totalOdd">0.00×</span>
       </div>
       <div class="stake-row">
         <label>Monto</label>
@@ -86,9 +81,7 @@
 </div>
 
 <script>
-  let currentEventId = null;
-  let currentSelection = null;
-  let currentMarketId = 1;
+  let slipPicks = [];
 
   function setStake(amount) {
     document.getElementById('stakeInput').value = amount;
@@ -96,42 +89,106 @@
   }
 
   function updatePotentialWin() {
-    const oddText = document.getElementById('totalOdd').innerText;
-    const odd = parseFloat(oddText.replace('×', '')) || 0;
+    let totalOdd = 1;
+    if (slipPicks.length === 0) {
+      totalOdd = 0;
+    } else {
+      slipPicks.forEach(pick => {
+        totalOdd *= parseFloat(pick.oddValue);
+      });
+    }
+    
+    document.getElementById('totalOdd').innerText = totalOdd.toFixed(2) + '×';
+
     const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
-    const potential = (odd * stake).toFixed(2);
+    const potential = (totalOdd * stake).toFixed(2);
     document.getElementById('potentialWin').innerText = `S/ ${potential}`;
-    document.getElementById('placeBetBtn').disabled = stake < 5; // minimum bet
+    
+    const minStake = 5;
+    document.getElementById('placeBetBtn').disabled = stake < minStake || slipPicks.length === 0;
   }
 
   function clearBetSlip() {
-    document.getElementById('betSlipItems').style.display = 'none';
-    document.getElementById('betSlipEmpty').style.display = 'block';
-    document.getElementById('bs-count').innerText = '0';
+    slipPicks = [];
     document.getElementById('stakeInput').value = '';
-    currentEventId = null;
-    currentSelection = null;
+    renderSlip();
+  }
+
+  function removePick(eventId) {
+    slipPicks = slipPicks.filter(p => p.eventId !== eventId);
+    renderSlip();
+  }
+
+  function renderSlip() {
+    const container = document.getElementById('bs-picks-container');
+    const emptyState = document.getElementById('betSlipEmpty');
+    const contentState = document.getElementById('betSlipItems');
+    const countBadge = document.getElementById('bs-count');
+
+    countBadge.innerText = slipPicks.length;
+
+    if (slipPicks.length === 0) {
+      emptyState.style.display = 'block';
+      contentState.style.display = 'none';
+    } else {
+      emptyState.style.display = 'none';
+      contentState.style.display = 'block';
+      
+      container.innerHTML = slipPicks.map(pick => `
+        <div class="bs-pick">
+          <div class="bs-pick-info">
+            <div class="bs-pick-match">${pick.matchName}</div>
+            <div class="bs-pick-sel">✓ ${pick.label.toUpperCase()}</div>
+          </div>
+          <div class="bs-pick-odd">${pick.oddValue}×</div>
+          <div class="bs-pick-rm" onclick="removePick(${pick.eventId})"><i class="ti ti-x"></i></div>
+        </div>
+      `).join('');
+    }
     updatePotentialWin();
   }
 
   function addToSlip(label, eventId, marketId = 1) {
-    currentEventId = eventId;
-    currentSelection = label === 'visitante' ? 'visita' : label;
-    currentMarketId = marketId;
-
-    document.getElementById('betSlipEmpty').style.display = 'none';
-    document.getElementById('betSlipItems').style.display = 'block';
-    document.getElementById('bs-count').innerText = '1';
+    const apiSelection = label === 'visitante' ? 'visita' : label;
     
-    // Fallback if websocket hasn't loaded values
     let oddValueText = document.getElementById(`odd-${label}-${eventId}`)?.innerText || '2.10';
     if(oddValueText === '-') oddValueText = '2.10';
-    
-    document.getElementById('slipOdd').innerText = oddValueText + '×';
-    document.getElementById('totalOdd').innerText = oddValueText + '×';
-    document.getElementById('slipPick').innerText = '✓ ' + label.toUpperCase();
-    
-    updatePotentialWin();
+
+    let matchName = "Evento " + eventId;
+    const matchEl = document.querySelector(`#ev-${eventId} .ev-matchup`);
+    if(matchEl) {
+      const team1 = matchEl.querySelector('.ev-team:not(.right)')?.innerText || 'Eq A';
+      const team2 = matchEl.querySelector('.ev-team.right')?.innerText || 'Eq B';
+      matchName = `${team1} vs ${team2}`;
+    }
+
+    const newPick = {
+      eventId: eventId,
+      marketId: marketId,
+      selection: apiSelection,
+      label: label,
+      oddValue: oddValueText,
+      matchName: matchName
+    };
+
+    const existingIndex = slipPicks.findIndex(p => p.eventId === eventId);
+    if(existingIndex >= 0) {
+        if(slipPicks[existingIndex].selection === apiSelection) {
+            // Remove if clicked again
+            slipPicks.splice(existingIndex, 1);
+        } else {
+            // Replace if different selection for same event
+            slipPicks[existingIndex] = newPick;
+        }
+    } else {
+      if(slipPicks.length >= 10) {
+        showToast('Máximo 10 selecciones por apuesta.');
+        return;
+      }
+      slipPicks.push(newPick);
+    }
+
+    renderSlip();
   }
 
   async function placeBet() {
@@ -143,18 +200,37 @@
     const cuota = document.getElementById('totalOdd').innerText.replace('×', '');
     
     try {
-      const res = await apiFetch('/api/betting/place/', {
+      let endpoint = '';
+      let payload = {};
+
+      if (slipPicks.length === 1) {
+        endpoint = '/api/bets/place/';
+        payload = {
+          event_id: slipPicks[0].eventId,
+          market_id: slipPicks[0].marketId,
+          seleccion: slipPicks[0].selection,
+          monto: stake,
+          cuota_esperada: slipPicks[0].oddValue
+        };
+      } else {
+        endpoint = '/api/bets/combo/place/';
+        payload = {
+          monto: stake,
+          legs: slipPicks.map(p => ({
+            event_id: p.eventId,
+            market_id: p.marketId,
+            seleccion: p.selection,
+            cuota_esperada: p.oddValue
+          }))
+        };
+      }
+
+      const res = await apiFetch(endpoint, {
         method: 'POST',
         headers: {
             'X-Idempotency-Key': crypto.randomUUID()
         },
-        body: JSON.stringify({
-          event_id: currentEventId,
-          market_id: currentMarketId,
-          seleccion: currentSelection,
-          monto: stake,
-          cuota_esperada: cuota
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if(res.ok) {
@@ -162,10 +238,8 @@
         clearBetSlip();
       } else {
         if(data.codigo === 'RE_COTIZACION') {
-            showToast('⚠️ La cuota ha cambiado a ' + data.nueva_cuota + '. Por favor revisa y reconfirma tu apuesta.');
-            document.getElementById('totalOdd').innerText = data.nueva_cuota + '×';
-            document.getElementById('slipOdd').innerText = data.nueva_cuota + '×';
-            updatePotentialWin();
+            showToast('⚠️ Cuota cambiada. Por favor revisa y reconfirma tu apuesta.');
+            // This is complex for combos, simply clear for now or tell user
         } else {
             showToast('Error: ' + (data.error || JSON.stringify(data)));
         }
@@ -174,7 +248,7 @@
       showToast('Error de conexión');
     } finally {
       btn.innerText = 'APOSTAR AHORA';
-      if(document.getElementById('stakeInput').value >= 5) {
+      if(document.getElementById('stakeInput').value >= 5 && slipPicks.length > 0) {
         btn.disabled = false;
       }
     }

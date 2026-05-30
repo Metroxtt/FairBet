@@ -260,3 +260,99 @@ def place_combo_bet(request):
         )
 
     return Response(ComboBetSerializer(combo_bet).data, status=status.HTTP_201_CREATED)
+
+
+from django.db import transaction
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_settle_event(request):
+    """
+    Settle an event, resolve all its bets and combo bets.
+    Accepts: event_id, resultado ('local', 'empate', 'visita', 'cancelado')
+    """
+    event_id = request.data.get('event_id')
+    resultado = request.data.get('resultado')
+    
+    if not event_id or not resultado:
+        return Response({'error': 'Faltan parámetros: event_id y resultado son requeridos.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    if resultado not in ['local', 'empate', 'visita', 'cancelado']:
+        return Response({'error': 'Resultado inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        event = Event.objects.get(pk=event_id)
+    except Event.DoesNotExist:
+        return Response({'error': 'Evento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        
+    if event.estado == Event.Estado.FINISHED or event.estado == Event.Estado.CANCELLED:
+        return Response({'error': 'El evento ya ha sido finalizado o cancelado anteriormente.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    with transaction.atomic():
+        if resultado == 'cancelado':
+            event.estado = Event.Estado.CANCELLED
+        else:
+            event.estado = Event.Estado.FINISHED
+            event.resultado = resultado
+        event.save()
+        
+        event.markets.all().update(estado=Market.Estado.SETTLED)
+        
+        bets = Bet.objects.filter(event=event, estado=Bet.Estado.PENDING)
+        for bet in bets:
+            bet.settle(resultado)
+            
+        combo_bets = ComboBet.objects.filter(legs__event=event, estado=ComboBet.Estado.PENDING).distinct()
+        for combo in combo_bets:
+            combo.check_and_settle()
+            
+    return Response({'mensaje': 'Evento liquidado exitosamente.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_suspend_market(request):
+    """
+    Suspend or unsuspend a market or the entire event.
+    Accepts: event_id, market_id (optional), action ('suspend', 'unsuspend')
+    """
+    event_id = request.data.get('event_id')
+    market_id = request.data.get('market_id')
+    action = request.data.get('action') # 'suspend' or 'unsuspend'
+    
+    if not event_id or not action:
+        return Response({'error': 'Faltan parámetros: event_id y action son requeridos.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    if action not in ['suspend', 'unsuspend']:
+        return Response({'error': 'Acción inválida.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        event = Event.objects.get(pk=event_id)
+    except Event.DoesNotExist:
+        return Response({'error': 'Evento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        
+    if market_id:
+        try:
+            market = Market.objects.get(pk=market_id, event=event)
+        except Market.DoesNotExist:
+            return Response({'error': 'Mercado no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        if action == 'suspend':
+            market.estado = Market.Estado.SUSPENDED
+        else:
+            market.estado = Market.Estado.OPEN
+        market.save()
+        return Response({'mensaje': f"Mercado {market_id} {'suspendido' if action == 'suspend' else 'habilitado'} exitosamente."}, status=status.HTTP_200_OK)
+    else:
+        if action == 'suspend':
+            event.estado = Event.Estado.SUSPENDED
+            event.markets.all().update(estado=Market.Estado.SUSPENDED)
+        else:
+            from django.utils import timezone
+            if event.fecha_hora > timezone.now():
+                event.estado = Event.Estado.SCHEDULED
+            else:
+                event.estado = Event.Estado.LIVE
+            event.markets.all().update(estado=Market.Estado.OPEN)
+        event.save()
+        return Response({'mensaje': f"Evento {event_id} {'suspendido' if action == 'suspend' else 'habilitado'} exitosamente."}, status=status.HTTP_200_OK)

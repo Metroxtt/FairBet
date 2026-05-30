@@ -63,20 +63,26 @@ def operator_dashboard_view(request):
         return redirect('home')
         
     from django.db.models import Sum, Count, F
-    from betting.models import Bet, SuspiciousActivity
+    from betting.models import Bet, ComboBet, SuspiciousActivity
     from django.utils import timezone
     from datetime import timedelta
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
     # Calcular GGR = Total Apostado (won+lost) - Total Pagado (won)
-    total_apostado_liquidado = Bet.objects.filter(estado__in=[Bet.Estado.WON, Bet.Estado.LOST]).aggregate(t=Sum('monto'))['t'] or 0
+    total_apostado_liquidado_bets = Bet.objects.filter(estado__in=[Bet.Estado.WON, Bet.Estado.LOST]).aggregate(t=Sum('monto'))['t'] or 0
+    total_apostado_liquidado_combos = ComboBet.objects.filter(estado__in=[ComboBet.Estado.WON, ComboBet.Estado.LOST]).aggregate(t=Sum('monto'))['t'] or 0
+    total_apostado_liquidado = total_apostado_liquidado_bets + total_apostado_liquidado_combos
     
     # Ganancias pagadas (lo que ganaron los usuarios)
     ganancias_pagadas = 0
     bets_won = Bet.objects.filter(estado=Bet.Estado.WON)
     for b in bets_won:
         ganancias_pagadas += b.pago_potencial
+        
+    combos_won = ComboBet.objects.filter(estado=ComboBet.Estado.WON)
+    for c in combos_won:
+        ganancias_pagadas += (c.monto * c.cuota_total)
         
     ggr = total_apostado_liquidado - ganancias_pagadas
     
@@ -86,11 +92,49 @@ def operator_dashboard_view(request):
     
     # Exposure por evento (cuánto se perdería si todos ganan)
     exposure_total = Bet.objects.filter(estado=Bet.Estado.PENDING).aggregate(t=Sum(F('monto') * F('cuota_al_apostar')))['t'] or 0
+    # Add pending combos exposure
+    exposure_combos = ComboBet.objects.filter(estado=ComboBet.Estado.PENDING).aggregate(t=Sum(F('monto') * F('cuota_total')))['t'] or 0
+    exposure_total += exposure_combos
     
     alertas = SuspiciousActivity.objects.filter(resuelto=False).order_by('-fecha')[:10]
     
     usuarios = User.objects.all().order_by('-date_joined')[:50]
 
+    from events.models import Event
+    active_events = Event.objects.exclude(estado__in=[Event.Estado.FINISHED, Event.Estado.CANCELLED]).prefetch_related('markets')
+
+    # Calcular GGR diario para los últimos 7 días
+    ggr_labels = []
+    ggr_values = []
+    for i in range(6, -1, -1):
+        dia = timezone.now().date() - timedelta(days=i)
+        ggr_labels.append(dia.strftime('%d/%m'))
+        
+        # Apostado en ese día y ya liquidado
+        apostado_dia_bets = Bet.objects.filter(
+            estado__in=[Bet.Estado.WON, Bet.Estado.LOST],
+            updated_at__date=dia
+        ).aggregate(t=Sum('monto'))['t'] or 0
+        
+        apostado_dia_combos = ComboBet.objects.filter(
+            estado__in=[ComboBet.Estado.WON, ComboBet.Estado.LOST],
+            updated_at__date=dia
+        ).aggregate(t=Sum('monto'))['t'] or 0
+        
+        apostado_dia = apostado_dia_bets + apostado_dia_combos
+        
+        # Pagado en ese día
+        pagado_dia = 0
+        bets_won_dia = Bet.objects.filter(estado=Bet.Estado.WON, updated_at__date=dia)
+        for b in bets_won_dia:
+            pagado_dia += b.pago_potencial
+            
+        combos_won_dia = ComboBet.objects.filter(estado=ComboBet.Estado.WON, updated_at__date=dia)
+        for c in combos_won_dia:
+            pagado_dia += (c.monto * c.cuota_total)
+            
+        ggr_dia = apostado_dia - pagado_dia
+        ggr_values.append(float(ggr_dia))
     
     return render(request, 'users/admin_dashboard.html', {
         'page_title': 'Dashboard del Operador',
@@ -101,6 +145,9 @@ def operator_dashboard_view(request):
         'exposure_total': exposure_total,
         'alertas': alertas,
         'usuarios': usuarios,
+        'active_events': active_events,
+        'ggr_labels': ggr_labels,
+        'ggr_values': ggr_values,
     })
 
 import csv

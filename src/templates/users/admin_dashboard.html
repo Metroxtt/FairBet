@@ -40,6 +40,13 @@
   </div>
   
   <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title">GGR Últimos 7 Días</div>
+    <div style="height: 250px; position: relative; margin-top: 16px;">
+      <canvas id="ggrChart"></canvas>
+    </div>
+  </div>
+
+  <div class="cfg-card" style="grid-column: 1 / -1;">
     <div class="cfg-title">Reporte MINCETUR</div>
     <p style="color: var(--muted2); font-size: 13px; margin-bottom: 16px;">
       Descargar el historial mensual exportable en formato CSV con columnas normativas.
@@ -74,6 +81,59 @@
       </table>
     </div>
   </div>
+  
+  <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title"><i class="ti ti-calendar"></i> Control de Eventos Activos</div>
+    <div style="margin-top: 16px; overflow-x: auto;">
+      <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
+        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
+          <th style="padding: 12px;">ID</th>
+          <th style="padding: 12px;">Evento</th>
+          <th style="padding: 12px;">Fecha / Hora</th>
+          <th style="padding: 12px;">Estado</th>
+          <th style="padding: 12px;">Suspender</th>
+          <th style="padding: 12px;">Establecer Resultado y Liquidar</th>
+        </tr>
+        {% for event in active_events %}
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px; color: var(--muted2);">{{ event.id }}</td>
+          <td style="padding: 12px; font-weight: 600;">{{ event.equipo_local }} vs {{ event.equipo_visitante }}</td>
+          <td style="padding: 12px; color: var(--muted2);">{{ event.fecha_hora|date:"d/m H:i" }}</td>
+          <td style="padding: 12px;">
+            <span class="badge 
+              {% if event.estado == 'live' %}green
+              {% elif event.estado == 'suspendido' %}style="background:rgba(255,59,92,.15);color:var(--red);"
+              {% else %}style="background:rgba(255,170,0,.15);color:var(--amber);"
+              {% endif %}">
+              {{ event.get_estado_display }}
+            </span>
+          </td>
+          <td style="padding: 12px;">
+            {% if event.estado == 'suspendido' %}
+            <button onclick="adminToggleSuspender({{ event.id }}, 'unsuspend')" class="btn btn-sm btn-outline" style="padding:4px 10px;font-size:11px;">Habilitar</button>
+            {% else %}
+            <button onclick="adminToggleSuspender({{ event.id }}, 'suspend')" class="btn btn-sm btn-red" style="padding:4px 10px;font-size:11px;">Suspender</button>
+            {% endif %}
+          </td>
+          <td style="padding: 12px; display: flex; align-items: center; gap: 8px;">
+            <select id="res-{{ event.id }}" class="stake-inp" style="width: auto; padding: 4px; font-size: 11px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
+              <option value="local">Gana Local (1)</option>
+              <option value="empate">Empate (X)</option>
+              <option value="visita">Gana Visitante (2)</option>
+              <option value="cancelado">Cancelado (Reembolsar)</option>
+            </select>
+            <button onclick="adminLiquidarEvento({{ event.id }})" class="btn btn-sm btn-green" style="padding:4px 10px;font-size:11px;">Liquidar</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="padding: 24px; text-align: center; color: var(--muted2);">No hay eventos activos para gestionar.</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
    <div class="cfg-card" style="grid-column: 1 / -1;">
     <div class="cfg-title"><i class="ti ti-users"></i> Usuarios Registrados</div>
     <div style="margin-top: 16px; overflow-x: auto;">
@@ -179,5 +239,84 @@ async function adminDesbloquear(userId) {
     if (res.ok) { showToast('Usuario desbloqueado'); setTimeout(() => location.reload(), 1000); }
     else { const d = await res.json(); showToast(d.error || 'Error'); }
 }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('ggrChart').getContext('2d');
+      new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: {{ ggr_labels|safe }},
+              datasets: [{
+                  label: 'GGR (S/.)',
+                  data: {{ ggr_values|safe }},
+                  borderColor: '#00FF87',
+                  backgroundColor: 'rgba(0, 255, 135, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                  y: {
+                      grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                      ticks: { color: '#8892b0' }
+                  },
+                  x: {
+                      grid: { display: false },
+                      ticks: { color: '#8892b0' }
+                  }
+              },
+              plugins: {
+                  legend: { display: false }
+              }
+          }
+      });
+  });
+
+  async function adminToggleSuspender(eventId, action) {
+      if (!confirm(`¿Seguro que deseas ${action === 'suspend' ? 'SUSPENDER' : 'HABILITAR'} este evento?`)) return;
+      try {
+          const res = await apiFetch('/api/bets/admin/suspend-market/', {
+              method: 'POST',
+              body: JSON.stringify({ event_id: eventId, action: action })
+          });
+          const data = await res.json();
+          if (res.ok) {
+              showToast(data.mensaje);
+              setTimeout(() => location.reload(), 1000);
+          } else {
+              showToast('Error: ' + (data.error || JSON.stringify(data)));
+          }
+      } catch(err) {
+          showToast('Error de conexión');
+      }
+  }
+
+  async function adminLiquidarEvento(eventId) {
+      const resSelect = document.getElementById(`res-${eventId}`);
+      const resultado = resSelect.value;
+      if (!confirm(`¿Confirmas liquidar el evento con el resultado: ${resultado.toUpperCase()}? Esta acción es irreversible.`)) return;
+      try {
+          const res = await apiFetch('/api/bets/admin/settle-event/', {
+              method: 'POST',
+              body: JSON.stringify({ event_id: eventId, resultado: resultado })
+          });
+          const data = await res.json();
+          if (res.ok) {
+              showToast('Evento liquidado y apuestas pagadas/actualizadas.');
+              setTimeout(() => location.reload(), 1000);
+          } else {
+              showToast('Error: ' + (data.error || JSON.stringify(data)));
+          }
+      } catch(err) {
+          showToast('Error de conexión');
+      }
+  }
 </script>
 {% endblock %}

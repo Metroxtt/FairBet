@@ -40,6 +40,21 @@ class Bet(models.Model):
         if self.estado != self.Estado.PENDING:
             raise ValueError(f'La apuesta ya está en estado {self.estado}')
 
+        if resultado_evento == 'cancelado':
+            with transaction.atomic():
+                user_account = Account.objects.select_for_update().get(
+                    user=self.user, account_type=Account.Tipo.WALLET_USUARIO
+                )
+                pendientes_account = Account.objects.select_for_update().get(
+                    account_type=Account.Tipo.APUESTAS_PENDIENTES
+                )
+                
+                transfer(pendientes_account, user_account, self.monto,
+                         f'Reembolso evento cancelado {self.pk}')
+                self.estado = self.Estado.CANCELLED
+                self.save(update_fields=['estado'])
+            return
+
         ganadora = self.seleccion == resultado_evento
 
         with transaction.atomic():
@@ -56,8 +71,9 @@ class Bet(models.Model):
             if ganadora:
                 ganancia = self.monto * self.cuota_al_apostar
                 ganancia_neta = ganancia - self.monto
-                transfer(casa_account, user_account, ganancia_neta,
-                         f'Ganancia apuesta {self.pk}')
+                if ganancia_neta > 0:
+                    transfer(casa_account, user_account, ganancia_neta,
+                             f'Ganancia apuesta {self.pk}')
                 transfer(pendientes_account, user_account, self.monto,
                          f'Devolucion stake apuesta {self.pk}')
                 self.estado = self.Estado.WON
@@ -72,7 +88,7 @@ class Bet(models.Model):
         if self.estado != self.Estado.PENDING:
             raise ValueError(f'Solo se puede hacer cash-out de apuestas pendientes.')
 
-        if self.event.estado in [Event.Estado.FINISHED, Event.Estado.CANCELLED]:
+        if self.event.estado in ['finalizado', 'cancelado']:
             raise ValueError(f'No se puede hacer cash-out de un evento {self.event.estado}.')
 
         # Obtener cuota actual
@@ -133,6 +149,7 @@ class ComboBet(models.Model):
     estado = models.CharField('estado', max_length=20, choices=Estado.choices, default=Estado.PENDING)
     idempotency_key = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField('creado el', auto_now_add=True)
+    updated_at = models.DateTimeField('actualizado el', auto_now=True)
 
     class Meta:
         verbose_name = 'apuesta combinada'
@@ -140,6 +157,70 @@ class ComboBet(models.Model):
 
     def __str__(self):
         return f'Combo {self.user} - ${self.monto}'
+
+    def check_and_settle(self):
+        if self.estado != self.Estado.PENDING:
+            return
+
+        legs = self.legs.all().select_related('event')
+        
+        any_lost = False
+        all_finished = True
+        
+        # Calculate new cuota total in case some legs are cancelled (cuota = 1.0)
+        recalculated_cuota = Decimal('1.0000')
+        
+        for leg in legs:
+            if leg.event.estado == 'finalizado':
+                if leg.seleccion != leg.event.resultado:
+                    any_lost = True
+                recalculated_cuota *= leg.cuota
+            elif leg.event.estado == 'cancelado':
+                # Cancelled legs are treated as void (odd 1.0)
+                recalculated_cuota *= Decimal('1.0000')
+            else:
+                all_finished = False
+                recalculated_cuota *= leg.cuota
+
+        if any_lost:
+            with transaction.atomic():
+                user_account = Account.objects.select_for_update().get(
+                    user=self.user, account_type=Account.Tipo.WALLET_USUARIO
+                )
+                casa_account = Account.objects.select_for_update().get(
+                    account_type=Account.Tipo.CASA
+                )
+                pendientes_account = Account.objects.select_for_update().get(
+                    account_type=Account.Tipo.APUESTAS_PENDIENTES
+                )
+                
+                transfer(pendientes_account, casa_account, self.monto,
+                         f'Apuesta combinada perdida {self.pk}')
+                self.estado = self.Estado.LOST
+                self.save(update_fields=['estado'])
+        elif all_finished:
+            with transaction.atomic():
+                user_account = Account.objects.select_for_update().get(
+                    user=self.user, account_type=Account.Tipo.WALLET_USUARIO
+                )
+                casa_account = Account.objects.select_for_update().get(
+                    account_type=Account.Tipo.CASA
+                )
+                pendientes_account = Account.objects.select_for_update().get(
+                    account_type=Account.Tipo.APUESTAS_PENDIENTES
+                )
+                
+                # Use recalculated cuota in case any leg was cancelled
+                ganancia = self.monto * round(recalculated_cuota, 4)
+                ganancia_neta = ganancia - self.monto
+                if ganancia_neta > 0:
+                    transfer(casa_account, user_account, ganancia_neta,
+                             f'Ganancia apuesta combinada {self.pk}')
+                transfer(pendientes_account, user_account, self.monto,
+                         f'Devolucion stake apuesta combinada {self.pk}')
+                self.estado = self.Estado.WON
+                self.cuota_total = round(recalculated_cuota, 4)
+                self.save(update_fields=['estado', 'cuota_total'])
 
 
 class ComboLeg(models.Model):

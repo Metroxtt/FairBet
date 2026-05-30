@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from events.models import Event, Market
 from wallet.models import Account, transfer
-from .models import Bet
-from .serializers import BetSerializer, PlaceBetSerializer
+from .models import Bet, ComboBet, ComboLeg
+from .serializers import BetSerializer, PlaceBetSerializer, ComboBetSerializer, PlaceComboBetSerializer
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -142,3 +142,121 @@ def cashout_bet(request, bet_id):
         }, status=status.HTTP_200_OK)
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def place_combo_bet(request):
+    serializer = PlaceComboBetSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    
+    idemp_key = request.headers.get('X-Idempotency-Key') or serializer.validated_data.get('idempotency_key')
+    if idemp_key:
+        from django.core.cache import cache
+        cache_key = f'idemp_combo_{idemp_key}'
+        if cache.get(cache_key):
+            return Response({'error': 'Solicitud duplicada. Esta apuesta combinada ya fue procesada.'}, status=status.HTTP_409_CONFLICT)
+        cache.set(cache_key, True, timeout=86400)
+        
+    user = request.user
+    
+    if user.is_staff:
+        return Response({'error': 'Los administradores no pueden apostar en su propia plataforma.'},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    if not user.es_verificado:
+        return Response({'error': 'Debe verificar su cuenta KYC antes de apostar'},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    if user.esta_autoexcluido:
+        return Response({'error': 'Usuario autoexcluido no puede apostar'},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    legs_data = serializer.validated_data['legs']
+    monto = serializer.validated_data['monto']
+    
+    # Validar y extraer eventos/mercados
+    cuota_total = Decimal('1.0000')
+    event_market_objs = []
+    
+    for leg in legs_data:
+        try:
+            event = Event.objects.get(pk=leg['event_id'])
+            market = Market.objects.get(pk=leg['market_id'])
+        except (Event.DoesNotExist, Market.DoesNotExist):
+            return Response({'error': f"Evento {leg['event_id']} o mercado {leg['market_id']} no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if event.estado not in [Event.Estado.SCHEDULED, Event.Estado.LIVE]:
+            return Response({'error': f"El evento {event.id} no esta disponible"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if market.estado != Market.Estado.OPEN:
+            return Response({'error': f"Mercado {market.id} no disponible"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        seleccion = leg['seleccion']
+        cuota_map = {
+            'local': market.cuota_local,
+            'empate': market.cuota_empate,
+            'visita': market.cuota_visitante,
+        }
+        cuota = cuota_map.get(seleccion)
+        if not cuota:
+            return Response({'error': f"Seleccion {seleccion} invalida para el evento {event.id}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        cuota_esperada = leg.get('cuota_esperada')
+        if cuota_esperada and cuota != cuota_esperada:
+            return Response({
+                'error': f'La cuota del evento {event.id} ha cambiado.',
+                'codigo': 'RE_COTIZACION',
+                'event_id': event.id,
+                'nueva_cuota': str(cuota)
+            }, status=status.HTTP_409_CONFLICT)
+            
+        cuota_total *= cuota
+        event_market_objs.append({
+            'event': event,
+            'market': market,
+            'seleccion': seleccion,
+            'cuota': cuota
+        })
+
+    from_account, _ = Account.objects.get_or_create(
+        user=user, account_type=Account.Tipo.WALLET_USUARIO
+    )
+    to_account, _ = Account.objects.get_or_create(
+        account_type=Account.Tipo.APUESTAS_PENDIENTES
+    )
+
+    if from_account.balance < monto:
+        return Response({'error': 'Saldo insuficiente para realizar la apuesta combinada'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from wallet.models import transfer
+        transfer(from_account, to_account, monto, f'Apuesta Combinada ({len(legs_data)} selecciones)', idempotency_key=idemp_key)
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    import uuid
+    combo_bet = ComboBet.objects.create(
+        user=user, 
+        monto=monto, 
+        cuota_total=round(cuota_total, 4),
+        idempotency_key=idemp_key if idemp_key else uuid.uuid4()
+    )
+    
+    for obj in event_market_objs:
+        ComboLeg.objects.create(
+            combo=combo_bet,
+            event=obj['event'],
+            market=obj['market'],
+            seleccion=obj['seleccion'],
+            cuota=obj['cuota']
+        )
+        
+    if monto >= Decimal('2000'):
+        from .models import SuspiciousActivity
+        SuspiciousActivity.objects.create(
+            user=user,
+            motivo=f'Apuesta combinada inusualmente alta de {monto} fichas.',
+            severidad=SuspiciousActivity.Severidad.ALTA
+        )
+
+    return Response(ComboBetSerializer(combo_bet).data, status=status.HTTP_201_CREATED)

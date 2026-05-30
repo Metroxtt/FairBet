@@ -8,7 +8,7 @@
     <div class="ev-top">
       <div class="ev-sport-badge">
         <span class="dot" style="background:#22C55E"></span>
-        Fútbol
+        {{ event.get_categoria_display }}
       </div>
       <div class="ev-meta">
         {% if event.estado == 'live' %}
@@ -37,37 +37,37 @@
           <div class="odds-strip three event-odds" data-market-id="{{ market.id }}">
             <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, '1')">
               <span class="odd-lbl">1</span>
-              <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
             </div>
             <div class="odd-box" onclick="addToSlip('empate', {{ event.id }}, {{ market.id }}, 'X')">
               <span class="odd-lbl">X</span>
-              <span class="odd-num" id="odd-{{ market.id }}-empate">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-empate">{{ market.cuota_empate|stringformat:".2f" }}</span>
             </div>
             <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, '2')">
               <span class="odd-lbl">2</span>
-              <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
             </div>
           </div>
           {% elif market.tipo == 'over_under' %}
           <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
             <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Over 2.5')">
               <span class="odd-lbl">Over 2.5</span>
-              <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
             </div>
             <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Under 2.5')">
               <span class="odd-lbl">Under 2.5</span>
-              <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
             </div>
           </div>
           {% elif market.tipo == 'btts' %}
           <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
             <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Ambos Sí')">
               <span class="odd-lbl">Ambos Sí</span>
-              <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-local">{{ market.cuota_local|stringformat:".2f" }}</span>
             </div>
             <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Ambos No')">
               <span class="odd-lbl">Ambos No</span>
-              <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+              <span class="odd-num" id="odd-{{ market.id }}-visita">{{ market.cuota_visitante|stringformat:".2f" }}</span>
             </div>
           </div>
           {% endif %}
@@ -84,6 +84,20 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Set active sport chip from server context
+    const currentCat = '{{ current_categoria|default:"" }}';
+    if (currentCat) {
+      document.querySelectorAll('.sport-chip').forEach(c => {
+        const map = { '':'Todos', 'futbol':'Fútbol', 'basketball':'Basketball', 'tenis':'Tenis', 'esports':'E-Sports', 'boxeo':'Boxeo' };
+        if (c.textContent.trim() === map[currentCat]) {
+          c.classList.add('active');
+        } else {
+          c.classList.remove('active');
+        }
+      });
+    }
+
+    if (!window.userAuthenticated) return;
     // Obtenemos todos los eventos listados en la pantalla
     const eventContainers = document.querySelectorAll('.ev-markets');
     

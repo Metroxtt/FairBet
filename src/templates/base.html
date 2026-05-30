@@ -37,8 +37,10 @@
         {% block content %}{% endblock %}
       </div>
       
-      <div class="side-col">
-        {% include 'components/_bet_slip.html' %}
+       <div class="side-col">
+        {% if not user.is_staff %}
+          {% include 'components/_bet_slip.html' %}
+        {% endif %}
       </div>
     </div>
     

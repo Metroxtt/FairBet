@@ -18,7 +18,8 @@ class LedgerEntrySerializer(serializers.ModelSerializer):
 
 
 class DepositSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal('0.01'))
+    amount = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal('20'),
+                                       error_messages={'min_value': 'El monto mínimo de depósito es S/ 20.'})
     idempotency_key = serializers.UUIDField(required=False)
 
 

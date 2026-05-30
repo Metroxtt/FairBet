@@ -35,7 +35,8 @@
       <button type="button" class="dep-btn" onclick="setDep(200)">S/ 200</button>
       <button type="button" class="dep-btn" onclick="setDep(500)">S/ 500</button>
     </div>
-    <input class="dep-inp" type="number" step="0.01" name="amount" id="dep-inp" placeholder="Monto personalizado (S/)" required>
+    <input class="dep-inp" type="number" step="0.01" min="20" name="amount" id="dep-inp" placeholder="Monto personalizado (S/)" required>
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:10px;">Monto mínimo: S/ 20</div>
     <button type="submit" class="dep-submit">DEPOSITAR AHORA</button>
   </form>
 </div>
@@ -79,6 +80,13 @@
     const btn = document.querySelector('.dep-submit');
     const amount = document.getElementById('dep-inp').value;
     const url = this.getAttribute('action');
+
+    if (parseFloat(amount) < 20) {
+      alert('El monto mínimo de depósito es S/ 20.');
+      btn.innerText = 'DEPOSITAR AHORA';
+      btn.disabled = false;
+      return;
+    }
     
     btn.innerText = 'PROCESANDO...';
     btn.disabled = true;
@@ -100,7 +108,8 @@
               window.location.reload();
             }, 1000);
         } else {
-            alert('Error: ' + (data.error || JSON.stringify(data)));
+            const msg = data.error || (data.amount ? data.amount.join('. ') : JSON.stringify(data));
+            alert('Error: ' + msg);
         }
     } catch(err) {
         alert('Error de conexión o de red');

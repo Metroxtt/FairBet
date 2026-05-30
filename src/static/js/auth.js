@@ -36,9 +36,17 @@ async function apiFetch(url, options = {}) {
         headers['X-CSRFToken'] = csrftoken;
     }
 
-    const response = await fetch(url, { ...options, headers });
+    const fetchOptions = {
+        credentials: 'include',
+        ...options,
+        headers
+    };
+
+    const response = await fetch(url, fetchOptions);
     // Si el token expiro y era 401, redirige al login
     if (response.status === 401) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login/';
         return;
     }

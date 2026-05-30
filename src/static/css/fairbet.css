@@ -73,6 +73,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .u-level{font-size:10px;color:var(--neon);letter-spacing:.5px}
 
 /* â”€â”€ SECONDARY NAV (sport filters) â”€â”€ */
+/* ── SECONDARY NAV (sport filters) ── */
 .sport-bar{
   background:var(--surface);border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:8px;padding:0 28px;
@@ -80,17 +81,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 }
 .sport-bar::-webkit-scrollbar{display:none}
 .sport-chip{
-  display:flex;align-items:center;gap:6px;
-  padding:8px 14px;border-radius:6px;
-  font-family:var(--font-disp);font-size:13px;font-weight:600;letter-spacing:.5px;
-  color:var(--muted2);cursor:pointer;transition:.2s;white-space:nowrap;
-  border:1px solid transparent;margin:6px 0;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  background:var(--surface);border:1px solid var(--border);
+  font-family:var(--font-disp);font-size:14px;font-weight:600;letter-spacing:.5px;
+  color:var(--muted2);cursor:pointer;transition:.2s;
+  text-decoration:none;
 }
 .sport-chip:hover{color:var(--text);background:var(--surface2)}
-.sport-chip.active{color:#000;background:var(--neon);border-color:var(--neon)}
+.sport-chip.active{color:#000 !important;background:var(--neon);border-color:var(--neon)}
 .sport-chip i{font-size:15px}
 
-/* â”€â”€ BODY â”€â”€ */
+/* ── BODY ── */
 .body-wrap{
   display:grid;
   grid-template-columns:1fr 340px;

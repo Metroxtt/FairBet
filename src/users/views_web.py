@@ -36,6 +36,9 @@ def home_view(request):
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+        
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')

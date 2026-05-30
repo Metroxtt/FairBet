@@ -45,6 +45,10 @@ def deposit(request):
     serializer.is_valid(raise_exception=True)
 
     user = request.user
+    if user.is_staff:
+        return Response({'error': 'Los administradores no pueden depositar fichas.'},
+                        status=status.HTTP_403_FORBIDDEN)
+    
     amount = serializer.validated_data['amount']
     idempotency_key = serializer.validated_data.get('idempotency_key')
 
@@ -83,6 +87,10 @@ def withdraw(request):
     serializer.is_valid(raise_exception=True)
 
     user = request.user
+    if user.is_staff:
+        return Response({'error': 'Los administradores no pueden retirar fichas.'},
+                        status=status.HTTP_403_FORBIDDEN)
+    
     amount = serializer.validated_data['amount']
     idempotency_key= serializer.validated_data.get('idempotency_key')
 

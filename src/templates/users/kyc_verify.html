@@ -2,44 +2,43 @@
 {% block title %}Verificación KYC{% endblock %}
 
 {% block content %}
-<div style="max-width:500px;">
+<div class="sec-hdr">
+  <div class="sec-title">Verificación KYC</div>
+</div>
 
-  <div class="section-header">
-    <div class="section-title">VERIFICACIÓN <span>KYC</span></div>
-  </div>
-
-  <div class="card" style="padding:24px;">
+<div class="config-grid" style="max-width:500px;">
+  <div class="cfg-card" style="grid-column:1/-1;">
 
     {% if user.estado == 'verificado' %}
       <div style="text-align:center; padding:20px 0;">
-        <div style="font-size:48px; margin-bottom:12px;">✅</div>
-        <div style="font-size:18px; font-weight:700; color:var(--green);">Ya estás verificado</div>
-        <p style="color:var(--muted); margin-top:8px;">Puedes apostar sin restricciones.</p>
+        <i class="ti ti-circle-check" style="font-size:48px; color:var(--neon); display:block; margin-bottom:12px;"></i>
+        <div style="font-family:var(--font-disp); font-size:22px; font-weight:700; color:var(--neon);">Ya estás verificado</div>
+        <p style="color:var(--muted2); margin-top:8px; font-size:13px;">Puedes apostar sin restricciones.</p>
       </div>
 
     {% elif user.estado == 'autoexcluido' or user.estado == 'bloqueado' %}
       <div style="text-align:center; padding:20px 0;">
-        <div style="font-size:48px; margin-bottom:12px;">🔒</div>
-        <div style="font-size:18px; font-weight:700; color:var(--red);">Cuenta {{ user.estado }}</div>
-        <p style="color:var(--muted); margin-top:8px;">No puedes verificar tu cuenta en este estado.</p>
+        <i class="ti ti-lock" style="font-size:48px; color:var(--red); display:block; margin-bottom:12px;"></i>
+        <div style="font-family:var(--font-disp); font-size:22px; font-weight:700; color:var(--red);">Cuenta {{ user.estado }}</div>
+        <p style="color:var(--muted2); margin-top:8px; font-size:13px;">No puedes verificar tu cuenta en este estado.</p>
       </div>
 
     {% else %}
-      <div style="text-align:center; margin-bottom:24px;">
-        <div style="font-size:40px; margin-bottom:12px;">🪪</div>
-        <p style="color:var(--muted);">Para apostar necesitas verificar tu identidad. Confirma que eres mayor de edad.</p>
-      </div>
+      <div class="cfg-title"><i class="ti ti-id"></i> Verifica tu identidad</div>
+      <p style="color:var(--muted2); margin-bottom:20px; font-size:13px;">
+        Para apostar necesitas verificar tu identidad. Confirma que eres mayor de edad.
+      </p>
 
       <form id="kycForm" method="POST" action="{% url 'kyc' %}">
         {% csrf_token %}
-        <div class="form-group" style="text-align:center;">
-          <label style="display:flex; align-items:center; gap:10px; justify-content:center; cursor:pointer;">
-            <input type="checkbox" name="confirmar" value="true" required>
+        <div style="margin-bottom:16px;">
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text); font-size:14px;">
+            <input type="checkbox" name="confirmar" value="true" required style="accent-color:var(--neon); width:18px; height:18px;">
             <span>Confirmo que soy mayor de 18 años</span>
           </label>
         </div>
         <div id="kyc-error" style="color:var(--red); margin-bottom:12px; display:none;"></div>
-        <button type="submit" class="btn btn-gold" style="width:100%;">VERIFICAR IDENTIDAD</button>
+        <button type="submit" class="dep-submit">VERIFICAR IDENTIDAD</button>
       </form>
     {% endif %}
 
@@ -58,8 +57,8 @@ document.getElementById('kycForm')?.addEventListener('submit', async (e) => {
     });
 
     if (res.ok) {
-        alert('Identidad verificada exitosamente. ¡Ya puedes apostar!');
-        window.location.reload();
+        showToast('Identidad verificada exitosamente. ¡Ya puedes apostar!');
+        setTimeout(() => window.location.reload(), 1500);
     } else {
         const data = await res.json();
         errorDiv.textContent = Object.values(data).flat().join('. ');

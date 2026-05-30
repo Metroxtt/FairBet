@@ -16,11 +16,12 @@
     {% include 'components/_topbar.html' %}
     
     <div class="sport-bar" id="sport-bar">
-      <div class="sport-chip active" onclick="window.location.href='/events/'"><i class="ti ti-apps"></i> Todos</div>
-      <div class="sport-chip" onclick="window.location.href='/events/?sport=futbol'"><i class="ti ti-ball-football"></i> Fútbol</div>
-      <div class="sport-chip" onclick="window.location.href='/events/?sport=basket'"><i class="ti ti-ball-basketball"></i> Basketball</div>
-      <div class="sport-chip" onclick="window.location.href='/events/?sport=tenis'"><i class="ti ti-tournament"></i> Tenis</div>
-      <div class="sport-chip" onclick="window.location.href='/events/?sport=esports'"><i class="ti ti-device-gamepad-2"></i> E-Sports</div>
+      <div class="sport-chip active" onclick="selectSport(this)"><i class="ti ti-apps"></i> Todos</div>
+      <div class="sport-chip" onclick="selectSport(this)"><i class="ti ti-ball-football"></i> Fútbol</div>
+      <div class="sport-chip" onclick="selectSport(this)"><i class="ti ti-ball-basketball"></i> Basketball</div>
+      <div class="sport-chip" onclick="selectSport(this)"><i class="ti ti-tournament"></i> Tenis</div>
+      <div class="sport-chip" onclick="selectSport(this)"><i class="ti ti-device-gamepad-2"></i> E-Sports</div>
+      <div class="sport-chip" onclick="selectSport(this)"><i class="ti ti-barbell"></i> Boxeo</div>
     </div>
     
     <div class="body-wrap">
@@ -62,6 +63,29 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
       }
     }
+
+    function selectSport(el) {
+      document.querySelectorAll('.sport-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    // Resaltar la pestaña activa según la URL actual
+    document.addEventListener('DOMContentLoaded', () => {
+      const path = window.location.pathname;
+      document.querySelectorAll('.ntab').forEach(tab => {
+        const href = tab.getAttribute('href');
+        if (href && path.startsWith(href) && href !== '/') {
+          document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        }
+      });
+      // Si estamos en home (/), activar Inicio
+      if (path === '/' || path === '') {
+        document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+        const homeTab = document.querySelector('.ntab[href="/"]') || document.querySelector('.ntab');
+        if (homeTab) homeTab.classList.add('active');
+      }
+    });
   </script>
   {% block extra_js %}{% endblock %}
 </body>

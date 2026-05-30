@@ -1,4 +1,4 @@
-﻿*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}
 :root{
   --neon:#00FF87;--neon2:#00E574;--neon-dim:rgba(0,255,135,.12);
   --neon-border:rgba(0,255,135,.3);
@@ -345,7 +345,76 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 }
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-/* â”€â”€ SCROLLBAR â”€â”€ */
+/* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:11px;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.form-input,.form-input[type="text"],.form-input[type="email"],.form-input[type="password"],.form-input[type="number"],.form-input[type="date"],select.form-input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);padding:10px 14px;border-radius:8px;
+  font-family:var(--font-body);font-size:14px;outline:none;transition:.2s;
+}
+.form-input:focus{border-color:var(--neon-border);background:var(--neon-dim)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 20px;border-radius:8px;font-family:var(--font-disp);
+  font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer;
+  border:none;transition:.2s;text-decoration:none;
+}
+.btn-gold,.btn-green{background:var(--neon);color:#000}
+.btn-gold:hover,.btn-green:hover{background:#00ff9d;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--neon-border);color:var(--neon)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#ff5577}
+.btn-sm{padding:7px 14px;font-size:13px}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:4px 12px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.5px}
+.badge.green{background:rgba(0,255,135,.12);color:var(--neon)}
+
+/* ── AVATAR ── */
+.avatar{
+  width:48px;height:48px;border-radius:10px;
+  background:linear-gradient(135deg,var(--neon),#007a40);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;color:#000;flex-shrink:0;
+}
+
+/* ── SECTION HEADER (legacy compatibility) ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-family:var(--font-disp);font-size:20px;font-weight:700;letter-spacing:.5px}
+.section-title span{color:var(--neon)}
+
+/* ── GRID UTILS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── AUTH PAGES ── */
+.logo-name{font-family:var(--font-disp);font-size:36px;font-weight:800;letter-spacing:3px;color:var(--neon);text-shadow:0 0 20px rgba(0,255,135,.4)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:11px;color:var(--muted2);font-weight:500;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── RESPONSIBLE GAMING MSG ── */
+.responsible-msg{
+  background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.25);
+  border-radius:8px;padding:10px 14px;margin-bottom:16px;
+  font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;
+}
+
+/* ── LINK COLORS ── */
+a{color:var(--neon);transition:color .2s}
+a:hover{color:#00ff9d}

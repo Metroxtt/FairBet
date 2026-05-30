@@ -4,7 +4,7 @@
 {% block auth_content %}
 <div style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
   <div class="card" style="width:400px; padding:40px;">
-    <div class="logo-name" style="text-align:center; margin-bottom:32px;">FairBet</div>
+    <div class="logo-name" style="text-align:center; margin-bottom:32px;">FAIRBET</div>
 
     {% if error %}
       <div style="color:var(--red); margin-bottom:16px;">{{ error }}</div>
@@ -20,10 +20,10 @@
         <label class="form-label">Contraseña</label>
         <input type="password" name="password" class="form-input" required>
       </div>
-      <button type="submit" class="btn btn-gold" style="width:100%;">INGRESAR</button>
+      <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;">INGRESAR</button>
     </form>
     <p style="text-align:center; margin-top:16px; color:var(--muted);">
-      ¿No tienes cuenta? <a href="{% url 'register' %}" style="color:var(--gold);">Regístrate</a>
+      ¿No tienes cuenta? <a href="{% url 'register' %}" style="color:var(--neon);">Regístrate</a>
     </p>
   </div>
 </div>

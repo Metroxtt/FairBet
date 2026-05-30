@@ -46,7 +46,7 @@ def place_bet(request):
         return Response({'error': 'Evento o mercado no encontrado'},
                         status=status.HTTP_404_NOT_FOUND)
 
-    if event.estado != Event.Estado.SCHEDULED:
+    if event.estado not in [Event.Estado.SCHEDULED, Event.Estado.LIVE]:
         return Response({'error': 'El evento no esta disponible para apuestas'},
                         status=status.HTTP_400_BAD_REQUEST)
 
@@ -91,3 +91,21 @@ def place_bet(request):
     )
 
     return Response(BetSerializer(bet).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def cashout_bet(request, bet_id):
+    try:
+        bet = Bet.objects.get(pk=bet_id, user=request.user)
+    except Bet.DoesNotExist:
+        return Response({'error': 'Apuesta no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        monto = bet.cash_out()
+        return Response({
+            'mensaje': 'Cash-out exitoso',
+            'monto_devuelto': str(monto)
+        }, status=status.HTTP_200_OK)
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="sec-hdr">
+  <div class="sec-title">{{ page_title }}</div>
+</div>
+
+<div class="config-grid">
+  <div class="cfg-card">
+    <div class="cfg-title">GGR (Gross Gaming Revenue)</div>
+    <div style="font-family: var(--font-disp); font-size: 32px; font-weight: 700; color: var(--neon);">
+      S/. {{ ggr|floatformat:2 }}
+    </div>
+    <p style="color: var(--muted2); font-size: 13px; margin-top: 8px;">
+      Ingresos brutos de la casa. (Apostado - Pagado)
+    </p>
+  </div>
+
+  <div class="cfg-card">
+    <div class="cfg-title">Métricas de Volumen</div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted2);">Total Apostado (Resuelto):</span>
+        <strong style="color: var(--text);">S/. {{ total_apostado_liquidado|floatformat:2 }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted2);">Ganancias Pagadas:</span>
+        <strong style="color: var(--red);">S/. {{ ganancias_pagadas|floatformat:2 }}</strong>
+      </div>
+    </div>
+  </div>
+  
+  <div class="cfg-card" style="grid-column: 1 / -1;">
+    <div class="cfg-title">Verificación de Integridad del Ledger (Auditoría)</div>
+    <p style="color: var(--muted2); font-size: 13px; margin-bottom: 16px;">
+      Verifica que la cadena de hashes criptográficos SHA-256 de todas las transacciones financieras (partida doble) se mantenga íntegra.
+    </p>
+    <button onclick="verificarLedger()" class="btn" style="width: 100%; justify-content: center; background: var(--surface3); border: 1px solid var(--neon);">
+      Ejecutar Auditoría Completa
+    </button>
+    <div id="auditoria-result" style="margin-top: 16px; display: none; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.5);">
+    </div>
+  </div>
+</div>
+
+<script>
+async function verificarLedger() {
+    const resDiv = document.getElementById('auditoria-result');
+    resDiv.style.display = 'block';
+    resDiv.style.color = 'var(--text)';
+    resDiv.innerHTML = 'Verificando firmas SHA-256...';
+
+    try {
+        const res = await apiFetch('/api/wallet/verify-ledger/', { method: 'GET' });
+        const data = await res.json();
+        
+        if (res.ok) {
+            resDiv.style.color = 'var(--neon)';
+            resDiv.innerHTML = '✅ ' + data.mensaje;
+        } else {
+            resDiv.style.color = 'var(--red)';
+            resDiv.innerHTML = '❌ INCONSISTENCIA DETECTADA:<br><br>' + JSON.stringify(data.errores, null, 2);
+        }
+    } catch (err) {
+        resDiv.style.color = 'var(--red)';
+        resDiv.innerHTML = 'Error de conexión con el auditor.';
+    }
+}
+</script>
+{% endblock %}

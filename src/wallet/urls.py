@@ -6,4 +6,5 @@ urlpatterns = [
     path('transactions/', views.TransactionHistoryView.as_view(), name='wallet-transactions'),
     path('deposit/', views.deposit, name='wallet-deposit'),
     path('withdraw/', views.withdraw, name="wallet-withdraw"),
+    path('verify-ledger/', views.verify_ledger, name='verify-ledger'),
 ]

@@ -19,4 +19,5 @@ urlpatterns_web = [
     path('kyc/', views_web.kyc_view, name='kyc'),
     path('deposit-limits/', views_web.deposit_limits_view, name='deposit-limits-web'),
     path('self-exclude/', views_web.self_exclude_view, name='self-exclude'),
+    path('operator-dashboard/', views_web.operator_dashboard_view, name='operator-dashboard'),
 ]

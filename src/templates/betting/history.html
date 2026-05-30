@@ -1,32 +1,44 @@
 {% extends 'base.html' %}
-{% block title %}Historial de Apuestas{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 <div class="sec-hdr">
-  <div class="sec-title">Historial de Apuestas</div>
+  <div class="sec-title">{{ page_title }}</div>
 </div>
 
 <div class="hist-list" id="hist-list">
-  {% for bet in user_bets %}
-  <div class="hist-card">
-    <div class="hist-indicator {% if bet.status == 'won' %}won{% elif bet.status == 'lost' %}lost{% else %}pending{% endif %}"></div>
+  {% for bet in bets %}
+  <div class="hist-card" id="bet-card-{{ bet.id }}">
+    <div class="hist-indicator {% if bet.estado == 'won' %}won{% elif bet.estado == 'lost' %}lost{% elif bet.estado == 'cashed_out' %}cashed{% else %}pending{% endif %}"></div>
     <div>
       <div class="hist-match">{{ bet.event.equipo_local }} vs {{ bet.event.equipo_visitante }}</div>
-      <div class="hist-detail">{{ bet.get_pick_display }} · cuota {{ bet.odds }}× · apostado S/ {{ bet.amount }}</div>
+      <div class="hist-detail">
+        Selección: <strong>{{ bet.get_seleccion_display|default:bet.seleccion|title }}</strong> · Cuota: {{ bet.cuota_al_apostar }}× · Apostado S/ {{ bet.monto }}
+      </div>
+      {% if bet.estado == 'pending' %}
+      <div style="margin-top: 10px;">
+        <button onclick="realizarCashout({{ bet.id }})" class="btn" style="padding: 6px 12px; font-size: 12px; background: var(--surface3); border: 1px solid var(--neon); color: var(--neon); cursor: pointer; border-radius: 4px;">
+          Cash Out
+        </button>
+      </div>
+      {% endif %}
     </div>
     <div class="hist-result">
-      <div class="hist-amount {% if bet.status == 'won' %}won{% elif bet.status == 'lost' %}lost{% else %}pending{% endif %}">
-        {% if bet.status == 'won' %}
-          +S/ {{ bet.potential_payout }}
-        {% elif bet.status == 'lost' %}
-          -S/ {{ bet.amount }}
+      <div class="hist-amount {% if bet.estado == 'won' %}won{% elif bet.estado == 'lost' %}lost{% elif bet.estado == 'cashed_out' %}cashed{% else %}pending{% endif %}">
+        {% if bet.estado == 'won' %}
+          +S/ {{ bet.pago_potencial|floatformat:2 }}
+        {% elif bet.estado == 'lost' %}
+          -S/ {{ bet.monto|floatformat:2 }}
+        {% elif bet.estado == 'cashed_out' %}
+          Retirado
         {% else %}
-          S/ {{ bet.amount }} (*)
+          Potencial: S/ {{ bet.pago_potencial|floatformat:2 }}
         {% endif %}
       </div>
       <div class="hist-state">
-        {% if bet.status == 'won' %}Ganado
-        {% elif bet.status == 'lost' %}Perdido
+        {% if bet.estado == 'won' %}Ganada
+        {% elif bet.estado == 'lost' %}Perdida
+        {% elif bet.estado == 'cashed_out' %}Cash Out
         {% else %}Pendiente
         {% endif %}
       </div>
@@ -38,4 +50,32 @@
   </div>
   {% endfor %}
 </div>
+
+<script>
+async function realizarCashout(betId) {
+    if (!confirm('¿Seguro que deseas hacer Cash Out para esta apuesta?')) return;
+
+    try {
+        const res = await apiFetch(`/api/bets/${betId}/cashout/`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast(`Cash-out exitoso: S/ ${data.monto_devuelto}`);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast(data.error || 'Error al procesar el cashout', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Error de conexión', 'error');
+    }
+}
+</script>
+
+<style>
+.hist-indicator.cashed { background: var(--amber); }
+.hist-amount.cashed { color: var(--amber); }
+</style>
 {% endblock %}

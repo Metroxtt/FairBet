@@ -16,6 +16,11 @@
     <a href="{% url 'profile' %}" class="ntab" style="text-decoration:none">
       <i class="ti ti-user"></i> Mi Perfil
     </a>
+    {% if user.is_staff %}
+    <a href="{% url 'operator-dashboard' %}" class="ntab" style="text-decoration:none; color: var(--gold);">
+      <i class="ti ti-shield"></i> Operador
+    </a>
+    {% endif %}
   </nav>
   <div class="topbar-end">
     <div class="balance-chip" onclick="window.location.href='/wallet/'" style="cursor:pointer">

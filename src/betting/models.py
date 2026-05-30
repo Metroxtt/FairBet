@@ -68,6 +68,57 @@ class Bet(models.Model):
 
             self.save(update_fields=['estado'])
 
+    def cash_out(self):
+        if self.estado != self.Estado.PENDING:
+            raise ValueError(f'Solo se puede hacer cash-out de apuestas pendientes.')
+
+        if self.event.estado in [Event.Estado.FINISHED, Event.Estado.CANCELLED]:
+            raise ValueError(f'No se puede hacer cash-out de un evento {self.event.estado}.')
+
+        # Obtener cuota actual
+        cuota_map = {
+            'local': self.market.cuota_local,
+            'empate': self.market.cuota_empate,
+            'visita': self.market.cuota_visitante,
+        }
+        cuota_actual = cuota_map.get(self.seleccion)
+        if not cuota_actual:
+            raise ValueError('Selección no válida para el mercado.')
+
+        factor_casa = Decimal('0.90')  # La casa retiene un 10%
+        # Formula: cashout = stake * odds_original / odds_actual * factor
+        monto_cashout = (self.monto * self.cuota_al_apostar / cuota_actual) * factor_casa
+        monto_cashout = round(monto_cashout, 4)
+
+        with transaction.atomic():
+            user_account = Account.objects.select_for_update().get(
+                user=self.user, account_type=Account.Tipo.WALLET_USUARIO
+            )
+            casa_account = Account.objects.select_for_update().get(
+                account_type=Account.Tipo.CASA
+            )
+            pendientes_account = Account.objects.select_for_update().get(
+                account_type=Account.Tipo.APUESTAS_PENDIENTES
+            )
+
+            # Liberar el stake de pendientes y enviarlo de vuelta (lo dividiremos lógicamente)
+            # Todo el stake de apuestas_pendientes vuelve a la casa (es la forma en que se maneja),
+            # o podemos hacerlo más limpio:
+            # Transferimos de pendientes a usuario el monto del cashout.
+            # Y de pendientes a casa el remanente.
+            # Wait, no. Si monto_cashout > stake, la casa tiene que poner la diferencia.
+            # Si monto_cashout < stake, la casa se queda con la diferencia.
+            
+            # Devolvemos todo el stake a la casa desde pendientes
+            transfer(pendientes_account, casa_account, self.monto, f'Cashout stake {self.pk}')
+            # Pagamos el monto de cashout desde la casa al usuario
+            transfer(casa_account, user_account, monto_cashout, f'Pago Cashout {self.pk}')
+
+            self.estado = self.Estado.CASHED_OUT
+            self.save(update_fields=['estado'])
+        
+        return monto_cashout
+
 
 class ComboBet(models.Model):
     class Estado(models.TextChoices):

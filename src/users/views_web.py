@@ -49,3 +49,29 @@ def deposit_limits_view(request):
 @login_required
 def self_exclude_view(request):
     return render(request, 'users/self_exclude.html', {'page_title': 'Autoexclusión'})
+
+@login_required
+def operator_dashboard_view(request):
+    if not request.user.is_staff:
+        return redirect('home')
+        
+    from django.db.models import Sum
+    from betting.models import Bet
+    
+    # Calcular GGR = Total Apostado (won+lost) - Total Pagado (won)
+    total_apostado_liquidado = Bet.objects.filter(estado__in=[Bet.Estado.WON, Bet.Estado.LOST]).aggregate(t=Sum('monto'))['t'] or 0
+    
+    # Ganancias pagadas (lo que ganaron los usuarios)
+    ganancias_pagadas = 0
+    bets_won = Bet.objects.filter(estado=Bet.Estado.WON)
+    for b in bets_won:
+        ganancias_pagadas += b.pago_potencial
+        
+    ggr = total_apostado_liquidado - ganancias_pagadas
+    
+    return render(request, 'users/admin_dashboard.html', {
+        'page_title': 'Dashboard del Operador',
+        'ggr': ggr,
+        'total_apostado_liquidado': total_apostado_liquidado,
+        'ganancias_pagadas': ganancias_pagadas
+    })

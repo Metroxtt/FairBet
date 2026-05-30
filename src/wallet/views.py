@@ -111,3 +111,53 @@ def withdraw(request):
         })
     except ValueError as e:
         return Response ({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def verify_ledger(request):
+    import hashlib
+    
+    accounts = Account.objects.all()
+    inconsistencias = []
+    
+    for account in accounts:
+        entries = LedgerEntry.objects.filter(account=account).order_by('created_at', 'id')
+        prev_hash = '0' * 64
+        
+        for entry in entries:
+            # Recalcular hash esperado
+            data = f"{prev_hash}{entry.id}{entry.account_id}{entry.debit}{entry.credit}{entry.description}"
+            expected_hash = hashlib.sha256(data.encode('utf-8')).hexdigest()
+            
+            if entry.hash != expected_hash:
+                inconsistencias.append({
+                    'account_id': str(account.id),
+                    'entry_id': str(entry.id),
+                    'motivo': 'Hash actual no coincide con el hash calculado',
+                    'esperado': expected_hash,
+                    'actual': entry.hash
+                })
+                break
+                
+            if entry.previous_hash != prev_hash:
+                inconsistencias.append({
+                    'account_id': str(account.id),
+                    'entry_id': str(entry.id),
+                    'motivo': 'El previous_hash no coincide con el hash del registro anterior',
+                    'esperado': prev_hash,
+                    'actual': entry.previous_hash
+                })
+                break
+                
+            prev_hash = entry.hash
+            
+    if inconsistencias:
+        return Response({
+            'estado': 'inconsistente',
+            'errores': inconsistencias
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    return Response({
+        'estado': 'ok',
+        'mensaje': 'Todas las cadenas de hash del ledger son íntegras y válidas.'
+    }, status=status.HTTP_200_OK)

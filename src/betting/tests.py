@@ -92,6 +92,30 @@ class BetStateMachineTest(TestCase):
         )
         self.assertEqual(bet.pago_potencial, Decimal('640'))
 
+    def test_cashout_bet_success(self):
+        bet = Bet.objects.create(
+            user=self.user, event=self.event, market=self.market,
+            seleccion='local', cuota_al_apostar=Decimal('3.50'),
+            monto=Decimal('100')
+        )
+        self._simulate_stake_moved(bet)
+        
+        # Simular que la cuota actual bajó a 2.0 (el equipo local está ganando)
+        self.market.cuota_local = Decimal('2.0')
+        self.market.save()
+        
+        # Cashout = (100 * 3.50 / 2.0) * 0.9 = 157.50
+        monto_devuelto = bet.cash_out()
+        self.assertEqual(monto_devuelto, Decimal('157.5000'))
+        
+        bet.refresh_from_db()
+        self.assertEqual(bet.estado, Bet.Estado.CASHED_OUT)
+        
+        user_account = Account.objects.get(user=self.user, account_type=Account.Tipo.WALLET_USUARIO)
+        # El saldo inicial era 0, se le devolvió 157.50
+        self.assertEqual(user_account.balance, Decimal('157.5000'))
+
+
 
 class PlaceBetValidationTest(TestCase):
     def setUp(self):

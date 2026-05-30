@@ -55,7 +55,7 @@ def operator_dashboard_view(request):
     if not request.user.is_staff:
         return redirect('home')
         
-    from django.db.models import Sum, Count
+    from django.db.models import Sum, Count, F
     from betting.models import Bet, SuspiciousActivity
     from django.utils import timezone
     from datetime import timedelta
@@ -78,7 +78,7 @@ def operator_dashboard_view(request):
     usuarios_activos = User.objects.filter(last_login__gte=ayer).count()
     
     # Exposure por evento (cuánto se perdería si todos ganan)
-    exposure_total = Bet.objects.filter(estado=Bet.Estado.ACCEPTED).aggregate(t=Sum('monto_potencial'))['t'] or 0
+    exposure_total = Bet.objects.filter(estado=Bet.Estado.PENDING).aggregate(t=Sum(F('monto') * F('cuota_al_apostar')))['t'] or 0
     
     alertas = SuspiciousActivity.objects.filter(resuelto=False).order_by('-fecha')[:10]
     

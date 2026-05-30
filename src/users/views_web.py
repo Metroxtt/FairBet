@@ -14,6 +14,12 @@ def home_view(request):
     from django.db.models import Sum
     from django.utils import timezone
     
+    # Transición automática de Programado a En Vivo
+    Event.objects.filter(
+        estado=Event.Estado.SCHEDULED,
+        fecha_hora__lte=timezone.now()
+    ).update(estado=Event.Estado.LIVE)
+
     categoria = request.GET.get('categoria')
     featured_query = Event.objects.exclude(estado='finished').prefetch_related('markets').order_by('fecha_hora')
     if categoria:
@@ -123,6 +129,13 @@ def operator_dashboard_view(request):
     usuarios = User.objects.all().order_by('-date_joined')[:50]
 
     from events.models import Event
+    
+    # Transición automática de Programado a En Vivo
+    Event.objects.filter(
+        estado=Event.Estado.SCHEDULED, 
+        fecha_hora__lte=timezone.now()
+    ).update(estado=Event.Estado.LIVE)
+
     active_events = Event.objects.exclude(estado__in=[Event.Estado.FINISHED, Event.Estado.CANCELLED]).prefetch_related('markets')
 
     # Calcular GGR diario para los últimos 7 días
@@ -225,12 +238,25 @@ def add_event_view(request):
         from decimal import Decimal
         from django.utils.dateparse import parse_datetime
         from django.contrib import messages
-        
         try:
             categoria = request.POST.get('categoria')
             equipo_local = request.POST.get('equipo_local')
             equipo_visitante = request.POST.get('equipo_visitante')
-            fecha_hora = parse_datetime(request.POST.get('fecha_hora'))
+            estado_inicial = request.POST.get('estado_inicial', 'scheduled')
+            
+            from django.utils import timezone
+            
+            if estado_inicial == 'live':
+                fecha_hora = timezone.now()
+                estado_evento = Event.Estado.LIVE
+            else:
+                fecha_hora = parse_datetime(request.POST.get('fecha_hora'))
+                if not fecha_hora:
+                    raise ValueError("Fecha inválida")
+                if fecha_hora < timezone.now():
+                    raise ValueError("La fecha programada no puede estar en el pasado.")
+                estado_evento = Event.Estado.SCHEDULED
+                
             cuota_local = Decimal(request.POST.get('cuota_local'))
             cuota_empate = Decimal(request.POST.get('cuota_empate'))
             cuota_visitante = Decimal(request.POST.get('cuota_visitante'))
@@ -241,7 +267,7 @@ def add_event_view(request):
                 equipo_local=equipo_local,
                 equipo_visitante=equipo_visitante,
                 fecha_hora=fecha_hora,
-                estado=Event.Estado.SCHEDULED
+                estado=estado_evento
             )
             
             # Create Default 1X2 Market
@@ -261,3 +287,56 @@ def add_event_view(request):
             messages.error(request, f'Error al crear el evento: {str(e)}')
             
     return render(request, 'users/admin_add_event.html', {'page_title': 'Nuevo Evento'})
+
+@login_required
+def edit_event_view(request, event_id):
+    if not request.user.is_staff:
+        return redirect('home')
+        
+    from events.models import Event, Market
+    from django.shortcuts import get_object_or_404
+    from decimal import Decimal
+    from django.utils.dateparse import parse_datetime
+    from django.contrib import messages
+    from django.utils import timezone
+    
+    event = get_object_or_404(Event, id=event_id)
+    market = event.markets.filter(tipo=Market.Tipo.ONE_X_TWO).first()
+    
+    if request.method == 'POST':
+        try:
+            event.categoria = request.POST.get('categoria', event.categoria)
+            event.equipo_local = request.POST.get('equipo_local', event.equipo_local)
+            event.equipo_visitante = request.POST.get('equipo_visitante', event.equipo_visitante)
+            
+            estado_inicial = request.POST.get('estado_inicial')
+            if estado_inicial == 'live':
+                event.fecha_hora = timezone.now()
+                event.estado = Event.Estado.LIVE
+            elif estado_inicial == 'scheduled':
+                fecha_hora_str = request.POST.get('fecha_hora')
+                if fecha_hora_str:
+                    nueva_fecha = parse_datetime(fecha_hora_str)
+                    if nueva_fecha < timezone.now():
+                        raise ValueError("La fecha no puede estar en el pasado.")
+                    event.fecha_hora = nueva_fecha
+                    event.estado = Event.Estado.SCHEDULED
+            event.save()
+            
+            if market:
+                market.cuota_local = Decimal(request.POST.get('cuota_local', market.cuota_local))
+                market.cuota_empate = Decimal(request.POST.get('cuota_empate', market.cuota_empate))
+                market.cuota_visitante = Decimal(request.POST.get('cuota_visitante', market.cuota_visitante))
+                market.save()
+                
+            messages.success(request, 'Evento actualizado exitosamente.')
+            return redirect('operator-dashboard')
+            
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el evento: {str(e)}')
+            
+    return render(request, 'users/admin_edit_event.html', {
+        'page_title': 'Editar Evento',
+        'event': event,
+        'market': market
+    })

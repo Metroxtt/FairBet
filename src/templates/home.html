@@ -33,7 +33,7 @@
 
 <div class="events-grid" id="eventsGrid">
   {% for event in featured_events %}
-  <div class="ev" id="ev-{{ event.id }}">
+  <div class="ev {% if event.estado == 'suspendido' %}ev-suspended{% endif %}" id="ev-{{ event.id }}">
     <div class="ev-top">
       <div class="ev-sport-badge">
         <span class="dot" style="background:#22C55E"></span>
@@ -42,6 +42,8 @@
       <div class="ev-meta">
         {% if event.estado == 'live' %}
         <span class="ev-live">LIVE</span>
+        {% elif event.estado == 'suspendido' %}
+        <span class="ev-live" style="background:var(--red);color:#fff;border:none;">SUSPENDIDO</span>
         {% endif %}
         <span class="ev-time"><i class="ti ti-clock" style="font-size:11px"></i> {{ event.fecha_hora|date:"d/m H:i" }}</span>
       </div>

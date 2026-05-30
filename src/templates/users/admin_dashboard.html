@@ -140,18 +140,22 @@
                 {% endif %}
               </td>
               <td>
-                {% if event.estado == 'suspendido' %}
-                <button onclick="adminToggleSuspender({{ event.id }},'unsuspend')" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Habilitar</button>
-                {% else %}
-                <button onclick="adminToggleSuspender({{ event.id }},'suspend')" class="op-action-btn red-o" style="padding:5px 10px;font-size:11px;width:auto">Suspender</button>
-                {% endif %}
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  {% if event.estado == 'suspendido' %}
+                  <button onclick="adminToggleSuspender({{ event.id }},'unsuspend')" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto">Habilitar</button>
+                  {% else %}
+                  <button onclick="adminToggleSuspender({{ event.id }},'suspend')" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Suspender</button>
+                  {% endif %}
+                  <a href="{% url 'operator-edit-event' event.id %}" class="op-action-btn neon-o" style="padding:4px 8px;font-size:11px;width:auto;text-decoration:none;display:inline-flex;align-items:center;">Editar</a>
+                  <button onclick="adminEliminarEvento({{ event.id }})" class="op-action-btn red-o" style="padding:4px 8px;font-size:11px;width:auto">Eliminar</button>
+                </div>
               </td>
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
                   <select id="res-{{ event.id }}" style="padding:5px 8px;font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;outline:none">
-                    <option value="local">Local (1)</option>
-                    <option value="empate">Empate (X)</option>
-                    <option value="visita">Visitante (2)</option>
+                    <option value="local">Local (L)</option>
+                    <option value="empate">Empate (E)</option>
+                    <option value="visita">Visitante (V)</option>
                     <option value="cancelado">Cancelar</option>
                   </select>
                   <button onclick="adminLiquidarEvento({{ event.id }})" class="op-action-btn neon-o" style="padding:5px 10px;font-size:11px;width:auto">Liquidar</button>
@@ -359,7 +363,21 @@ async function adminDesbloquear(userId) {
       }
   }
 
-  async function adminLiquidarEvento(eventId) {
+  async function adminEliminarEvento(eventId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este evento por completo? Esta acción no se puede deshacer.')) return;
+    const res = await apiFetch(`/api/events/${eventId}/`, {
+        method: 'DELETE'
+    });
+    if (res.ok) {
+        showToast('Evento eliminado');
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        const d = await res.json();
+        showToast(d.error || 'Error al eliminar');
+    }
+}
+
+async function adminLiquidarEvento(eventId) {
       const resSelect = document.getElementById(`res-${eventId}`);
       const resultado = resSelect.value;
       if (!confirm(`¿Confirmas liquidar el evento con el resultado: ${resultado.toUpperCase()}? Esta acción es irreversible.`)) return;

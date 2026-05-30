@@ -26,11 +26,11 @@
 </style>
 
 <div class="sec-hdr">
-  <div class="sec-title"><i class="ti ti-calendar-plus" style="color:var(--neon)"></i> {{ page_title }}</div>
+  <div class="sec-title"><i class="ti ti-edit" style="color:var(--neon)"></i> {{ page_title }}</div>
 </div>
 
 <div class="add-evt-container">
-  <div class="add-evt-h"><i class="ti ti-trophy"></i> Crear Evento Deportivo</div>
+  <div class="add-evt-h"><i class="ti ti-trophy"></i> Editar Evento Deportivo</div>
   
   {% if messages %}
     {% for message in messages %}
@@ -40,37 +40,37 @@
     {% endfor %}
   {% endif %}
 
-  <form method="post" class="add-evt-form" id="addEventForm">
+  <form method="post" class="add-evt-form" id="editEventForm">
     {% csrf_token %}
     
     <div class="add-evt-row">
       <div class="add-evt-col" style="grid-column: 1 / -1;">
         <label>Categoría Deportiva</label>
         <select name="categoria" class="add-evt-input" required>
-          <option value="futbol">Fútbol</option>
-          <option value="basketball">Basketball</option>
-          <option value="tenis">Tenis</option>
-          <option value="esports">E-Sports</option>
-          <option value="boxeo">Boxeo</option>
+          <option value="futbol" {% if event.categoria == 'futbol' %}selected{% endif %}>Fútbol</option>
+          <option value="basketball" {% if event.categoria == 'basketball' %}selected{% endif %}>Basketball</option>
+          <option value="tenis" {% if event.categoria == 'tenis' %}selected{% endif %}>Tenis</option>
+          <option value="esports" {% if event.categoria == 'esports' %}selected{% endif %}>E-Sports</option>
+          <option value="boxeo" {% if event.categoria == 'boxeo' %}selected{% endif %}>Boxeo</option>
         </select>
       </div>
       <div class="add-evt-col">
         <label>Equipo Local</label>
-        <input type="text" name="equipo_local" class="add-evt-input" placeholder="Ej: Real Madrid" required>
+        <input type="text" name="equipo_local" class="add-evt-input" value="{{ event.equipo_local }}" required>
       </div>
       <div class="add-evt-col">
         <label>Equipo Visitante</label>
-        <input type="text" name="equipo_visitante" class="add-evt-input" placeholder="Ej: Barcelona" required>
+        <input type="text" name="equipo_visitante" class="add-evt-input" value="{{ event.equipo_visitante }}" required>
       </div>
     </div>
 
-    <!-- Selector de Estado Inicial -->
+    <!-- Selector de Estado -->
     <div class="add-evt-col">
-      <label>Estado Inicial del Evento</label>
+      <label>Estado del Evento</label>
       <div class="estado-toggle">
-        <input type="radio" name="estado_inicial" value="live" id="estado-live">
+        <input type="radio" name="estado_inicial" value="live" id="estado-live" {% if event.estado == 'live' %}checked{% endif %}>
         <label for="estado-live"><i class="ti ti-live-photo"></i> En Vivo</label>
-        <input type="radio" name="estado_inicial" value="scheduled" id="estado-scheduled" checked>
+        <input type="radio" name="estado_inicial" value="scheduled" id="estado-scheduled" {% if event.estado == 'scheduled' %}checked{% endif %}>
         <label for="estado-scheduled"><i class="ti ti-clock"></i> Programado</label>
       </div>
     </div>
@@ -78,30 +78,34 @@
     <!-- Campo de fecha (solo visible si es Programado) -->
     <div class="add-evt-col" id="fecha-wrapper">
       <label>Fecha y Hora del Evento</label>
-      <input type="datetime-local" name="fecha_hora" id="fecha_hora_input" class="add-evt-input">
+      <input type="datetime-local" name="fecha_hora" id="fecha_hora_input" class="add-evt-input" value="{{ event.fecha_hora|date:'Y-m-d\TH:i' }}">
     </div>
 
     <div style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 16px;">
       <div class="add-evt-h" style="font-size: 16px; margin-bottom: 12px;"><i class="ti ti-coin"></i> Mercado Inicial (1X2)</div>
       
+      {% if market %}
       <div class="add-evt-row" style="grid-template-columns: 1fr 1fr 1fr;">
         <div class="add-evt-col">
           <label>Cuota Local</label>
-          <input type="number" step="0.01" min="1.01" name="cuota_local" class="add-evt-input" placeholder="1.80" required>
+          <input type="number" step="0.01" min="1.01" name="cuota_local" class="add-evt-input" value="{{ market.cuota_local|stringformat:'.2f' }}" required>
         </div>
         <div class="add-evt-col">
           <label>Cuota Empate</label>
-          <input type="number" step="0.01" min="1.01" name="cuota_empate" class="add-evt-input" placeholder="3.20" required>
+          <input type="number" step="0.01" min="1.01" name="cuota_empate" class="add-evt-input" value="{{ market.cuota_empate|stringformat:'.2f' }}" required>
         </div>
         <div class="add-evt-col">
           <label>Cuota Visita</label>
-          <input type="number" step="0.01" min="1.01" name="cuota_visitante" class="add-evt-input" placeholder="4.50" required>
+          <input type="number" step="0.01" min="1.01" name="cuota_visitante" class="add-evt-input" value="{{ market.cuota_visitante|stringformat:'.2f' }}" required>
         </div>
       </div>
+      {% else %}
+        <div style="color:var(--muted2); font-size: 13px;">No hay un mercado 1X2 asociado.</div>
+      {% endif %}
     </div>
 
     <button type="submit" class="add-evt-submit">
-      <i class="ti ti-check"></i> Publicar Evento
+      <i class="ti ti-check"></i> Guardar Cambios
     </button>
   </form>
 
@@ -124,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       fechaWrapper.style.display = 'flex';
       fechaInput.setAttribute('required', 'required');
-      // Establecer el mínimo como la fecha/hora actual
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       fechaInput.min = now.toISOString().slice(0, 16);
@@ -133,10 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   radioLive.addEventListener('change', toggleFecha);
   radioScheduled.addEventListener('change', toggleFecha);
-  toggleFecha(); // Estado inicial
+  toggleFecha();
 
-  // Validación extra al enviar
-  document.getElementById('addEventForm').addEventListener('submit', function(e) {
+  document.getElementById('editEventForm').addEventListener('submit', function(e) {
     if (radioScheduled.checked) {
       const val = fechaInput.value;
       if (!val) { e.preventDefault(); alert('Debes ingresar una fecha y hora.'); return; }

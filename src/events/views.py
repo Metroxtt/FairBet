@@ -9,10 +9,14 @@ from .serializers import EventSerializer, MarketSerializer
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['estado']
     search_fields = ['equipo_local', 'equipo_visitante']
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def simulate_critical_event(self, request, pk=None):
@@ -47,7 +51,15 @@ class MarketViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filterset_fields = ['event', 'estado', 'tipo']
 
+from django.utils import timezone
+
 def event_list_view(request):
+    # Transición automática de Programado a En Vivo
+    Event.objects.filter(
+        estado=Event.Estado.SCHEDULED, 
+        fecha_hora__lte=timezone.now()
+    ).update(estado=Event.Estado.LIVE)
+    
     events = Event.objects.all().order_by('fecha_hora').prefetch_related('markets')
     categoria = request.GET.get('categoria')
     if categoria:

@@ -428,3 +428,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* ── LINK COLORS ── */
 a{color:var(--neon);transition:color .2s}
 a:hover{color:#00ff9d}
+
+/* ── EVENT SUSPENDED STATE ── */
+.ev-suspended{opacity:0.5;pointer-events:none;filter:grayscale(0.8);}

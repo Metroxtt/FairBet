@@ -11,8 +11,9 @@ def home_view(request):
     from events.models import Event
     from wallet.models import Account
     from betting.models import Bet
-    from django.db.models import Sum
+    from django.db.models import Sum, Count
     from django.utils import timezone
+    from datetime import timedelta
     
     # Transición automática de Programado a En Vivo
     Event.objects.filter(
@@ -30,6 +31,16 @@ def home_view(request):
     active_bets = Bet.objects.filter(user=request.user, estado=Bet.Estado.PENDING).count()
     wagered_today = Bet.objects.filter(user=request.user, created_at__date=timezone.now().date()).aggregate(t=Sum('monto'))['t'] or 0
     
+    # Top jugadores de la semana por monto total apostado
+    week_ago = timezone.now() - timedelta(days=7)
+    leaderboard = (
+        Bet.objects
+        .filter(created_at__gte=week_ago)
+        .values('user__nombre', 'user__apellido')
+        .annotate(total_apostado=Sum('monto'), total_apuestas=Count('id'))
+        .order_by('-total_apostado')[:10]
+    )
+    
     return render(request, 'home.html', {
         'page_title': 'Dashboard',
         'featured_events': featured_events,
@@ -37,6 +48,7 @@ def home_view(request):
         'account': account,
         'active_bets': active_bets,
         'wagered_today': wagered_today,
+        'leaderboard': leaderboard,
         'show_sport_bar': True
     })
 

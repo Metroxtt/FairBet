@@ -58,25 +58,16 @@
     <div class="sec-title" style="font-size:16px">Top Jugadores <span class="accent">/ Semana</span></div>
   </div>
   <div id="lb-body">
-    <!-- Static mock for Leaderboard -->
+    {% for player in leaderboard %}
     <div class="lb-row">
-      <div class="lb-pos g1">1</div>
-      <div class="lb-av" style="background:var(--neon)">CR</div>
-      <div class="lb-inf"><div class="lb-nm">Carlos R.</div><div class="lb-bets">48 apuestas</div></div>
-      <div class="lb-amt">S/ 3,200</div>
+      <div class="lb-pos {% if forloop.counter == 1 %}g1{% elif forloop.counter == 2 %}g2{% elif forloop.counter == 3 %}g3{% endif %}">{{ forloop.counter }}</div>
+      <div class="lb-av" style="background:{% if forloop.counter == 1 %}var(--neon){% elif forloop.counter == 2 %}var(--amber){% elif forloop.counter == 3 %}#cd7f32{% else %}var(--surface3){% endif %}">{{ player.user__nombre|first|upper }}{{ player.user__apellido|first|upper }}</div>
+      <div class="lb-inf"><div class="lb-nm">{{ player.user__nombre }} {{ player.user__apellido }}</div><div class="lb-bets">{{ player.total_apuestas }} apuestas</div></div>
+      <div class="lb-amt">S/ {{ player.total_apostado|stringformat:".2f" }}</div>
     </div>
-    <div class="lb-row">
-      <div class="lb-pos g2">2</div>
-      <div class="lb-av" style="background:var(--amber)">MT</div>
-      <div class="lb-inf"><div class="lb-nm">María T.</div><div class="lb-bets">32 apuestas</div></div>
-      <div class="lb-amt">S/ 1,800</div>
-    </div>
-    <div class="lb-row">
-      <div class="lb-pos g3">3</div>
-      <div class="lb-av" style="background:#cd7f32">JP</div>
-      <div class="lb-inf"><div class="lb-nm">Juan P.</div><div class="lb-bets">27 apuestas</div></div>
-      <div class="lb-amt">S/ 1,250</div>
-    </div>
+    {% empty %}
+    <div style="text-align:center;color:var(--muted);padding:16px;font-size:12px;">Aún no hay actividad esta semana.</div>
+    {% endfor %}
   </div>
 </div>
 

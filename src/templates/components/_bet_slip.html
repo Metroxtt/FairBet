@@ -139,7 +139,7 @@
     updatePotentialWin();
   }
 
-  function addToSlip(label, eventId, marketId = 1, displayLabel = null) {
+  window._betSlipAddToSlip = function(label, eventId, marketId = 1, displayLabel = null) {
     const apiSelection = label === 'visitante' ? 'visita' : label;
     
     // Look for new format (odd-{marketId}-{label}) or old format (odd-{label}-{eventId})

@@ -7,7 +7,7 @@
     <a href="/events/" class="ntab" style="text-decoration:none">
       <i class="ti ti-calendar-event"></i> Eventos
     </a>
-    {% if not user.is_staff %}
+    {% if user.is_authenticated and not user.is_staff %}
     <a href="/bets/" class="ntab" style="text-decoration:none">
       <i class="ti ti-history"></i> Mis Apuestas
     </a>
@@ -25,23 +25,27 @@
     {% endif %}
   </nav>
   <div class="topbar-end">
-    {% if not user.is_staff %}
-    <div class="balance-chip" onclick="window.location.href='/wallet/'" style="cursor:pointer">
-      <div><div class="lbl">Saldo (S/)</div><div class="val" id="wallet-amount">{{ user.balance|default:"0.00"|floatformat:2 }}</div></div>
-    </div>
-    {% endif %}
-    <form method="POST" action="{% url 'logout' %}" style="margin:0">
-      {% csrf_token %}
-      <button type="submit" class="notif-btn" title="Cerrar sesión" style="border:1px solid var(--border); background:var(--surface2);">
-        <i class="ti ti-logout"></i>
-      </button>
-    </form>
-    <div class="user-btn">
-      <div class="u-avatar">{{ user.nombre|make_list|first|upper }}</div>
-      <div>
-        <div class="u-name">{{ user.nombre }}</div>
-        <div class="u-level">Usuario</div>
+    {% if user.is_authenticated %}
+      {% if not user.is_staff %}
+      <div class="balance-chip" onclick="window.location.href='/wallet/'" style="cursor:pointer">
+        <div><div class="lbl">Saldo (S/)</div><div class="val" id="wallet-amount">{{ user.balance|default:"0.00"|floatformat:2 }}</div></div>
       </div>
-    </div>
+      {% endif %}
+      <form method="POST" action="{% url 'logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="notif-btn" title="Cerrar sesión" style="border:1px solid var(--border); background:var(--surface2);">
+          <i class="ti ti-logout"></i>
+        </button>
+      </form>
+      <div class="user-btn">
+        <div class="u-avatar">{{ user.nombre|make_list|first|upper }}</div>
+        <div>
+          <div class="u-name">{{ user.nombre }}</div>
+          <div class="u-level">Usuario</div>
+        </div>
+      </div>
+    {% else %}
+      <button class="auth-topbar-btn" onclick="showAuthModal()" style="background:var(--neon); color:#000; border:none; padding:8px 16px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;">Ingresar</button>
+    {% endif %}
   </div>
 </div>

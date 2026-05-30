@@ -140,7 +140,7 @@ CHANNEL_LAYERS = {
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Sesiones
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'

@@ -1,0 +1,220 @@
+<div id="authModal" class="auth-overlay" onclick="if(event.target===this)closeAuthModal()">
+  <div class="auth-card">
+    <button class="auth-x" onclick="closeAuthModal()"><i class="ti ti-x"></i></button>
+    <div class="auth-hdr">Fair<span>Bet</span></div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')" id="authTabLogin">Iniciar Sesión</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')" id="authTabRegister">Registrarse</div>
+    </div>
+
+    <div id="authBoxLogin">
+      <div id="authLoginError" class="auth-err" style="display:none"></div>
+      <div class="auth-field">
+        <label class="auth-lbl">Correo electrónico</label>
+        <input class="auth-inp" type="email" id="authLoginEmail" placeholder="correo@ejemplo.com">
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Contraseña</label>
+        <div class="password-wrapper">
+          <input class="auth-inp" type="password" id="authLoginPassword" placeholder="••••••••">
+          <button type="button" class="password-toggle" onclick="togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button class="auth-btn" onclick="submitLogin()">INGRESAR</button>
+    </div>
+
+    <div id="authBoxRegister" style="display:none">
+      <div id="authRegisterError" class="auth-err" style="display:none"></div>
+      <div class="auth-row">
+        <div class="auth-field">
+          <label class="auth-lbl">Nombres</label>
+          <input class="auth-inp" type="text" id="authRegNombre" placeholder="Nombres">
+        </div>
+        <div class="auth-field">
+          <label class="auth-lbl">Apellidos</label>
+          <input class="auth-inp" type="text" id="authRegApellido" placeholder="Apellidos">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">DNI</label>
+        <input class="auth-inp" type="text" id="authRegDni" placeholder="9 dígitos" maxlength="9">
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Correo electrónico</label>
+        <input class="auth-inp" type="email" id="authRegEmail" placeholder="correo@ejemplo.com">
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Teléfono</label>
+        <input class="auth-inp" type="tel" id="authRegTelefono" placeholder="999 999 999" required maxlength="9">
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Fecha de nacimiento</label>
+        <input class="auth-inp" type="date" id="authRegFechaNac">
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Contraseña</label>
+        <div class="password-wrapper">
+          <input class="auth-inp" type="password" id="authRegPassword" placeholder="Mín. 8 caracteres">
+          <button type="button" class="password-toggle" onclick="togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-lbl">Repetir contraseña</label>
+        <div class="password-wrapper">
+          <input class="auth-inp" type="password" id="authRegConfirmar" placeholder="Mín. 8 caracteres">
+          <button type="button" class="password-toggle" onclick="togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button class="auth-btn" onclick="submitRegister()">CREAR CUENTA</button>
+    </div>
+
+    <div class="auth-foot">
+      Al registrarte aceptas que eres mayor de 18 años y que esta es una plataforma educativa con moneda virtual.
+    </div>
+  </div>
+</div>
+
+<style>
+.auth-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+  z-index:9999; justify-content:center; align-items:center;
+  backdrop-filter:blur(4px);
+}
+.auth-overlay.show { display:flex; }
+.auth-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:28px 24px 20px; width:100%; max-width:420px; position:relative;
+  max-height:92vh; overflow-y:auto;
+}
+.auth-x {
+  position:absolute; top:12px; right:12px; background:none; border:none;
+  color:var(--muted2); font-size:20px; cursor:pointer; padding:4px; line-height:1;
+}
+.auth-hdr { font-size:28px; font-weight:800; text-align:center; color:var(--text); margin-bottom:16px; }
+.auth-hdr span { color:var(--neon); }
+.auth-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.auth-tab {
+  flex:1; text-align:center; padding:10px 0; cursor:pointer;
+  color:var(--muted2); font-size:13px; font-weight:600;
+  border-bottom:2px solid transparent; transition:all .2s;
+}
+.auth-tab.active { color:var(--neon); border-bottom-color:var(--neon); }
+.auth-err {
+  background:rgba(255,59,92,.15); color:var(--red); padding:8px 12px;
+  border-radius:6px; font-size:12px; margin-bottom:12px;
+}
+.auth-field { margin-bottom:14px; }
+.auth-lbl {
+  display:block; font-size:11px; color:var(--muted2); letter-spacing:.5px;
+  text-transform:uppercase; margin-bottom:4px;
+}
+.auth-inp {
+  width:100%; padding:10px 12px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-size:14px; outline:none;
+  box-sizing:border-box; transition:border-color .2s;
+}
+.auth-inp:focus { border-color:var(--neon); }
+.password-wrapper .auth-inp { padding-right:40px; }
+.auth-btn {
+  width:100%; padding:12px; background:var(--neon); color:#000; border:none;
+  border-radius:8px; font-size:15px; font-weight:700; cursor:pointer;
+  margin-top:4px; transition:opacity .2s;
+}
+.auth-btn:hover { opacity:.85; }
+.auth-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.auth-foot { font-size:10px; color:var(--muted2); text-align:center; line-height:1.4; margin-top:18px; }
+
+@media(max-width:480px){
+  .auth-card { padding:20px 16px 16px; border-radius:12px; margin:8px; }
+  .auth-row { grid-template-columns:1fr; }
+}
+</style>
+
+<script>
+function showAuthModal() {
+  document.getElementById('authModal').classList.add('show');
+  setTimeout(() => document.getElementById('authLoginEmail')?.focus(), 100);
+}
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('show');
+}
+function switchAuthTab(tab) {
+  document.getElementById('authTabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('authTabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('authBoxLogin').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('authBoxRegister').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('authLoginError').style.display = 'none';
+  document.getElementById('authRegisterError').style.display = 'none';
+}
+
+async function submitLogin() {
+  const email = document.getElementById('authLoginEmail').value.trim();
+  const password = document.getElementById('authLoginPassword').value;
+  const err = document.getElementById('authLoginError');
+  err.style.display = 'none';
+  if (!email || !password) { err.textContent = 'Completa todos los campos.'; err.style.display = 'block'; return; }
+  const fd = new URLSearchParams(); fd.append('email', email); fd.append('password', password);
+  try {
+    const r = await fetch('/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') },
+      body: fd.toString()
+    });
+    const d = await r.json();
+    if (d.success) {
+      // Also obtain JWT token for API calls
+      try {
+        const jr = await fetch('/api/token/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (jr.ok) {
+          const jd = await jr.json();
+          localStorage.setItem('access_token', jd.access);
+          localStorage.setItem('refresh_token', jd.refresh);
+        }
+      } catch(_) {}
+      window.location.reload();
+    }
+    else { err.textContent = d.error || 'Credenciales inválidas.'; err.style.display = 'block'; }
+  } catch(e) { err.textContent = 'Error de conexión.'; err.style.display = 'block'; }
+}
+
+async function submitRegister() {
+  const err = document.getElementById('authRegisterError');
+  err.style.display = 'none';
+  const dni = document.getElementById('authRegDni').value.trim();
+  const email = document.getElementById('authRegEmail').value.trim();
+  const nombre = document.getElementById('authRegNombre').value.trim();
+  const apellido = document.getElementById('authRegApellido').value.trim();
+  const telefono = document.getElementById('authRegTelefono').value.trim();
+  const fn = document.getElementById('authRegFechaNac').value;
+  const pw = document.getElementById('authRegPassword').value;
+  const cpw = document.getElementById('authRegConfirmar').value;
+  if (!dni || !email || !nombre || !apellido || !telefono || !fn || !pw || !cpw) {
+    err.textContent = 'Completa todos los campos obligatorios.'; err.style.display = 'block'; return;
+  }
+  if (pw !== cpw) { err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return; }
+  if (!/^9\d{8}$/.test(telefono)) {
+    err.textContent = 'El teléfono debe tener 9 dígitos y empezar con 9.'; err.style.display = 'block'; return;
+  }
+  try {
+    const r = await fetch('/api/users/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ dni, email, nombre, apellido, telefono, fecha_nacimiento: fn, password: pw, confirmar_password: cpw })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      err.style.background = 'rgba(0,255,135,.15)'; err.style.color = 'var(--neon)';
+      err.textContent = 'Cuenta creada. Ahora inicia sesión.'; err.style.display = 'block';
+      setTimeout(() => switchAuthTab('login'), 1500);
+    } else {
+      const msgs = Object.values(d).flat().join('. ') || 'Error al registrarse.';
+      err.textContent = msgs; err.style.display = 'block';
+    }
+  } catch(e) { err.textContent = 'Error de conexión.'; err.style.display = 'block'; }
+}
+</script>

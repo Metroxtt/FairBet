@@ -3,9 +3,16 @@
 
 {% block content %}
 <div class="hero" style="margin-bottom: 24px;">
-  <div class="hero-label">Panel principal</div>
-  <div class="hero-title">BIENVENIDO,<br><em>{{ user.nombre|upper }}</em></div>
-  <div class="hero-sub">Eventos disponibles hoy · Cuotas en vivo</div>
+  <div class="hero-label">FairBet Lab</div>
+  <div class="hero-title">
+    {% if user.is_authenticated %}
+    BIENVENIDO,<br><em>{{ user.nombre|upper }}</em>
+    {% else %}
+    BIENVENIDO A<br><em>FAIRBET</em>
+    {% endif %}
+  </div>
+  <div class="hero-sub">Plataforma educativa de apuestas · Moneda virtual</div>
+  {% if user.is_authenticated and not user.is_staff %}
   <div class="kpi-row">
     <div class="kpi">
       <div class="kpi-val neon">S/ {{ account.balance|default:"0.00"|floatformat:2 }}</div>
@@ -16,7 +23,7 @@
       <div class="kpi-lbl">Apuestas Activas</div>
     </div>
     <div class="kpi">
-      <div class="kpi-val" style="color:var(--neon)">{{ win_rate|default:"0" }}%</div>
+      <div class="kpi-val error-num" style="color:var(--neon)">{{ win_rate|default:"0" }}%</div>
       <div class="kpi-lbl">Tasa de aciertos</div>
     </div>
     <div class="kpi">
@@ -24,6 +31,12 @@
       <div class="kpi-lbl">Apostado hoy</div>
     </div>
   </div>
+  {% elif not user.is_authenticated %}
+  <div style="margin-top:20px; display:flex; gap:12px;">
+    <button class="auth-btn" onclick="showAuthModal()" style="flex:1; max-width:200px;">Iniciar Sesión</button>
+    <button class="auth-btn" onclick="showAuthModal();switchAuthTab('register')" style="flex:1; max-width:200px; background:var(--surface3); color:var(--text); border:1px solid var(--border);">Crear Cuenta</button>
+  </div>
+  {% endif %}
 </div>
 
 <div class="sec-hdr">
@@ -37,7 +50,7 @@
     <div class="ev-top">
       <div class="ev-sport-badge">
         <span class="dot" style="background:#22C55E"></span>
-        Fútbol
+        {{ event.get_categoria_display }}
       </div>
       <div class="ev-meta">
         {% if event.estado == 'live' %}

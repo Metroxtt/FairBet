@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Iniciar Sesión{% endblock %}
 
-{% block auth_content %}
-<div style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
-  <div class="card" style="width:400px; padding:40px;">
+{% block topbar %}{% endblock %}
+{% block sportbar %}{% endblock %}
+
+{% block body_main %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; background:var(--surface);">
+  <div class="card" style="width:100%; max-width:400px; padding:40px;">
     <div class="logo-name" style="text-align:center; margin-bottom:32px;">FAIRBET</div>
 
     {% if error %}

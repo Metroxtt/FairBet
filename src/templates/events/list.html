@@ -22,19 +22,47 @@
       <div class="ev-vs">VS</div>
       <div class="ev-team right">{{ event.equipo_visitante }}</div>
     </div>
-    <div class="odds-strip three event-odds" data-event-id="{{ event.id }}">
-      <div class="odd-box" onclick="addToSlip('local', {{ event.id }})">
-        <span class="odd-lbl">1</span>
-        <span class="odd-num" id="odd-local-{{ event.id }}">-</span>
-      </div>
-      <div class="odd-box" onclick="addToSlip('empate', {{ event.id }})">
-        <span class="odd-lbl">X</span>
-        <span class="odd-num" id="odd-empate-{{ event.id }}">-</span>
-      </div>
-      <div class="odd-box" onclick="addToSlip('visitante', {{ event.id }})">
-        <span class="odd-lbl">2</span>
-        <span class="odd-num" id="odd-visitante-{{ event.id }}">-</span>
-      </div>
+    <div class="ev-markets" data-event-id="{{ event.id }}">
+      {% for market in event.markets.all %}
+        {% if market.tipo == 'one_x_two' %}
+        <div class="odds-strip three event-odds" data-market-id="{{ market.id }}">
+          <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, '1')">
+            <span class="odd-lbl">1</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+          </div>
+          <div class="odd-box" onclick="addToSlip('empate', {{ event.id }}, {{ market.id }}, 'X')">
+            <span class="odd-lbl">X</span>
+            <span class="odd-num" id="odd-{{ market.id }}-empate">-</span>
+          </div>
+          <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, '2')">
+            <span class="odd-lbl">2</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+          </div>
+        </div>
+        {% elif market.tipo == 'over_under' %}
+        <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
+          <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Over 2.5')">
+            <span class="odd-lbl">Over 2.5</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+          </div>
+          <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Under 2.5')">
+            <span class="odd-lbl">Under 2.5</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+          </div>
+        </div>
+        {% elif market.tipo == 'btts' %}
+        <div class="odds-strip two event-odds" data-market-id="{{ market.id }}" style="margin-top: 8px;">
+          <div class="odd-box" onclick="addToSlip('local', {{ event.id }}, {{ market.id }}, 'Ambos Sí')">
+            <span class="odd-lbl">Ambos Sí</span>
+            <span class="odd-num" id="odd-{{ market.id }}-local">-</span>
+          </div>
+          <div class="odd-box" onclick="addToSlip('visita', {{ event.id }}, {{ market.id }}, 'Ambos No')">
+            <span class="odd-lbl">Ambos No</span>
+            <span class="odd-num" id="odd-{{ market.id }}-visita">-</span>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
   {% empty %}
@@ -64,17 +92,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Cuando recién conectamos, recibimos una "foto" inicial
             if (data.type === 'odds_snapshot' && data.markets.length > 0) {
-                // Tomamos el primer mercado para este ejemplo simple (Match Winner)
-                const market = data.markets[0]; 
-                updateOdd(`odd-local-${eventId}`, market.cuota_local);
-                updateOdd(`odd-empate-${eventId}`, market.cuota_empate);
-                updateOdd(`odd-visitante-${eventId}`, market.cuota_visitante);
+                data.markets.forEach(market => {
+                    updateOdd(`odd-${market.id}-local`, market.cuota_local);
+                    updateOdd(`odd-${market.id}-empate`, market.cuota_empate);
+                    updateOdd(`odd-${market.id}-visita`, market.cuota_visitante);
+                });
             } 
             // Cuando una cuota se actualiza desde el admin/backend
             else if (data.type === 'odds_update') {
-                updateOdd(`odd-local-${eventId}`, data.data.cuota_local);
-                updateOdd(`odd-empate-${eventId}`, data.data.cuota_empate);
-                updateOdd(`odd-visitante-${eventId}`, data.data.cuota_visitante);
+                updateOdd(`odd-${data.data.market_id}-local`, data.data.cuota_local);
+                updateOdd(`odd-${data.data.market_id}-empate`, data.data.cuota_empate);
+                updateOdd(`odd-${data.data.market_id}-visita`, data.data.cuota_visitante);
             }
         };
 

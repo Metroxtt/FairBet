@@ -48,5 +48,5 @@ class MarketViewSet(viewsets.ModelViewSet):
     filterset_fields = ['event', 'estado', 'tipo']
 
 def event_list_view(request):
-    events = Event.objects.all().order_by('fecha_hora')
+    events = Event.objects.all().order_by('fecha_hora').prefetch_related('markets')
     return render(request, 'events/list.html', {'events': events, 'page_title': 'Eventos'})

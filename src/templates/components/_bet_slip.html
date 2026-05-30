@@ -148,10 +148,12 @@
     updatePotentialWin();
   }
 
-  function addToSlip(label, eventId, marketId = 1) {
+  function addToSlip(label, eventId, marketId = 1, displayLabel = null) {
     const apiSelection = label === 'visitante' ? 'visita' : label;
     
-    let oddValueText = document.getElementById(`odd-${label}-${eventId}`)?.innerText || '2.10';
+    // Look for new format (odd-{marketId}-{label}) or old format (odd-{label}-{eventId})
+    let oddEl = document.getElementById(`odd-${marketId}-${label}`) || document.getElementById(`odd-${label}-${eventId}`);
+    let oddValueText = oddEl?.innerText || '2.10';
     if(oddValueText === '-') oddValueText = '2.10';
 
     let matchName = "Evento " + eventId;
@@ -166,7 +168,7 @@
       eventId: eventId,
       marketId: marketId,
       selection: apiSelection,
-      label: label,
+      label: displayLabel || label,
       oddValue: oddValueText,
       matchName: matchName
     };

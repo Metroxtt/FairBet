@@ -2,11 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.http import JsonResponse
 from users.models import User
 
 
 # Vista del Dashboard Principal
-@login_required
 def home_view(request):
     from events.models import Event
     from wallet.models import Account
@@ -22,49 +22,57 @@ def home_view(request):
     ).update(estado=Event.Estado.LIVE)
 
     categoria = request.GET.get('categoria')
-    featured_query = Event.objects.exclude(estado='finished').prefetch_related('markets').order_by('fecha_hora')
+    featured_query = Event.objects.exclude(estado=Event.Estado.FINISHED).prefetch_related('markets').order_by('fecha_hora')
     if categoria:
         featured_query = featured_query.filter(categoria=categoria)
     featured_events = featured_query[:4]
     
-    account = Account.objects.filter(user=request.user, account_type=Account.Tipo.WALLET_USUARIO).first()
-    active_bets = Bet.objects.filter(user=request.user, estado=Bet.Estado.PENDING).count()
-    wagered_today = Bet.objects.filter(user=request.user, created_at__date=timezone.now().date()).aggregate(t=Sum('monto'))['t'] or 0
-    
-    # Top jugadores de la semana por monto total apostado
-    week_ago = timezone.now() - timedelta(days=7)
-    leaderboard = (
-        Bet.objects
-        .filter(created_at__gte=week_ago)
-        .values('user__nombre', 'user__apellido')
-        .annotate(total_apostado=Sum('monto'), total_apuestas=Count('id'))
-        .order_by('-total_apostado')[:10]
-    )
-    
-    return render(request, 'home.html', {
+    context = {
         'page_title': 'Dashboard',
         'featured_events': featured_events,
         'current_categoria': categoria,
-        'account': account,
-        'active_bets': active_bets,
-        'wagered_today': wagered_today,
-        'leaderboard': leaderboard,
-        'show_sport_bar': True
-    })
+        'show_sport_bar': True,
+    }
+    
+    if request.user.is_authenticated:
+        account = Account.objects.filter(user=request.user, account_type=Account.Tipo.WALLET_USUARIO).first()
+        active_bets = Bet.objects.filter(user=request.user, estado=Bet.Estado.PENDING).count()
+        wagered_today = Bet.objects.filter(user=request.user, created_at__date=timezone.now().date()).aggregate(t=Sum('monto'))['t'] or 0
+        
+        # Top jugadores de la semana por monto total apostado
+        week_ago = timezone.now() - timedelta(days=7)
+        leaderboard = (
+            Bet.objects
+            .filter(created_at__gte=week_ago)
+            .values('user__nombre', 'user__apellido')
+            .annotate(total_apostado=Sum('monto'), total_apuestas=Count('id'))
+            .order_by('-total_apostado')[:10]
+        )
+        
+        context.update({
+            'account': account,
+            'active_bets': active_bets,
+            'wagered_today': wagered_today,
+            'leaderboard': leaderboard,
+        })
+    
+    return render(request, 'home.html', context)
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-        
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = authenticate(request, username=email, password=password)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if user is not None:
             login(request, user)
+            if is_ajax:
+                return JsonResponse({'success': True, 'redirect': '/'})
             return redirect(settings.LOGIN_REDIRECT_URL)
         else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'Credenciales inválidas.'}, status=401)
             return render(request, 'users/login.html', {'error': 'Credenciales inválidas.'})
     return render(request, 'users/login.html')
 
@@ -251,7 +259,6 @@ def add_event_view(request):
         from django.utils.dateparse import parse_datetime
         from django.contrib import messages
         try:
-            categoria = request.POST.get('categoria')
             equipo_local = request.POST.get('equipo_local')
             equipo_visitante = request.POST.get('equipo_visitante')
             estado_inicial = request.POST.get('estado_inicial', 'scheduled')
@@ -277,11 +284,11 @@ def add_event_view(request):
             
             # Create Event
             event = Event.objects.create(
-                categoria=categoria,
                 equipo_local=equipo_local,
                 equipo_visitante=equipo_visitante,
                 fecha_hora=fecha_hora,
-                estado=estado_evento
+                estado=estado_evento,
+                categoria=request.POST.get('categoria', 'futbol')
             )
             
             # Create Default 1X2 Market

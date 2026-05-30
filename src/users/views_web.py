@@ -6,7 +6,12 @@ from django.conf import settings
 # Vista del Dashboard Principal
 @login_required
 def home_view(request):
-    return render(request, 'home.html', {'page_title': 'Dashboard'})
+    from events.models import Event
+    featured_events = Event.objects.exclude(estado='finished').order_by('fecha_hora')[:4]
+    return render(request, 'home.html', {
+        'page_title': 'Dashboard',
+        'featured_events': featured_events
+    })
 
 # Vista de inicio de sesion: valida credenciales con authenticate()
 def login_view(request):

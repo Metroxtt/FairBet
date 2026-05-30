@@ -418,6 +418,35 @@ th{padding:10px 14px;text-align:left;font-size:11px;color:var(--muted2);font-wei
 td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
 tr:hover td{background:rgba(255,255,255,.02)}
 
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .body-wrap{grid-template-columns:1fr}
+  .main-col{border-right:none;max-height:none;padding:16px}
+  .side-col{max-height:none;padding:16px}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+  .wallet-grid{grid-template-columns:1fr}
+  .config-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .topbar{padding:0 12px;gap:4px}
+  .logo{font-size:22px;margin-right:16px}
+  .ntab{padding:0 10px;font-size:13px}
+  .ntab span{display:none}
+  .sport-bar{padding:0 12px}
+  .sport-chip{font-size:12px;padding:4px 10px}
+  .hero-title{font-size:24px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .kpi-val{font-size:20px}
+  .user-btn .u-name,.user-btn .u-level{display:none}
+  .balance-chip .lbl{display:none}
+}
+@media(max-width:400px){
+  .hero-title{font-size:20px}
+  .kpi-row{grid-template-columns:1fr}
+  .odds-strip.three{grid-template-columns:1fr}
+}
+
 /* ── RESPONSIBLE GAMING MSG ── */
 .responsible-msg{
   background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.25);

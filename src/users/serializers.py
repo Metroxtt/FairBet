@@ -28,6 +28,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('El DNI no es válido')
         return value
 
+    def validate_telefono(self, value):
+        if not value:
+            raise serializers.ValidationError('El teléfono es obligatorio')
+        if not value.isdigit() or len(value) != 9 or value[0] != '9':
+            raise serializers.ValidationError('El teléfono debe tener 9 dígitos y empezar con 9')
+        return value
+
     def validate_fecha_nacimiento(self, value):
         from datetime import date
         hoy = date.today()

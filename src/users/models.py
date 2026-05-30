@@ -37,7 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField('correo electrónico', unique=True)
     nombre = models.CharField('nombres', max_length=100)
     apellido = models.CharField('apellidos', max_length=100)
-    telefono = models.CharField('teléfono', max_length=15, blank=True)
+    telefono = models.CharField('teléfono', max_length=15)
     fecha_nacimiento = models.DateField('fecha de nacimiento')
 
     estado = models.CharField(
